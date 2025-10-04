@@ -14,12 +14,11 @@
             display: flex;
             height: 100vh;
             width: 100vw;
-            position: fixed;
             top: 0; left: 0;
             z-index: -1;
         }
         .split {
-            width: 33.3333vw;
+            width: {% if mission == 'orbit' %}50vw{% else %}33.3333vw{% endif %};
             height: 100vh;
             background-size: cover;
             background-position: center;
@@ -94,17 +93,19 @@
     <div class="split-bg">
         <div class="split inflatable-bg">
             <form class="hab-form" method="post">
-                <button class="hab-btn inflatable-btn" name="habitat_type" value="inflatable">INFLATABLE MODULE</button>
+                <button type="submit" class="hab-btn inflatable-btn" name="habitat" value="inflatable">INFLATABLE MODULE</button>
             </form>
         </div>
+        {% if mission != 'orbit' %}
         <div class="split soil-bg">
             <form class="hab-form" method="post">
-                <button class="hab-btn soil-btn" name="habitat_type" value="lunar_soil">LUNAR SOIL</button>
+                <button type="submit" class="hab-btn soil-btn" name="habitat" value="soil">LUNAR SOIL</button>
             </form>
         </div>
+        {% endif %}
         <div class="split prefab-bg">
             <form class="hab-form" method="post">
-                <button class="hab-btn prefab-btn" name="habitat_type" value="prefabricated">PREFABRICATED</button>
+                <button type="submit" class="hab-btn prefab-btn" name="habitat" value="prefab">PREFABRICATED</button>
             </form>
         </div>
     </div>

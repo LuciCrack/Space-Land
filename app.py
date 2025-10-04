@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 
 app = Flask(__name__)
 app.secret_key = "super_secret_hackathon_key"  # Needed for session
@@ -9,17 +9,27 @@ def index():
 
 @app.route('/mission', methods=['GET', 'POST'])
 def mission():
-    if request.method == 'POST':
+    if request.method == 'POST': # Guarda lo elegido en la session
         session['mission'] = request.form['mission']
-        return redirect(url_for('habitat_type'))
+        return redirect(url_for('habitat')) # Al siguiente menu: habitat
+    # Si el method es GET renderiza la pagina
     return render_template('mission.html')
 
-@app.route('/habitat-type', methods=['GET', 'POST'])
-def habitat_type():
-    if request.method == 'POST':
-        session['habitat_type'] = request.form['habitat_type']
-        return redirect(url_for('location'))
-    return render_template('habitat_type.html')
+@app.route('/habitat', methods=['GET', 'POST'])
+def habitat():
+    if request.method == 'POST': # Guarda lo elegido en la session
+        session['habitat'] = request.form['habitat']
+        return redirect(url_for('location')) # Al siguiente menu: location
+    # Si el method es GET
+    # Revisamos si eligio orbita u otro
+    mission = session['mission']
+    if mission in ['orbit', 'moon', 'mars']:
+        return render_template('habitat.html', mission=mission)
+    
+    # Error: if the session var 'mission' is none of the expected
+    # (which should not by any normal mean happen) then you
+    # must go through mission choosing
+    return redirect(url_for('mission'))
 
 @app.route('/location', methods=['GET', 'POST'])
 def location():
@@ -28,7 +38,10 @@ def location():
         # Now, pass all choices to the editor
         return redirect(url_for('editor'))
     # Optionally: pass mission/habitat_type to template to customize options
-    return render_template('location.html', mission=session.get('mission'), habitat_type=session.get('habitat_type'))
+    return render_template('location.html', 
+                           mission=session.get('mission'), 
+                           habitat=session.get('habitat')
+    )
 
 @app.route('/editor')
 def editor():
