@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Base 2D – Builder (HTML + SVG + JS)</title>
 <style>
-  :root{ --cell:64px; --cols:22; --rows:12; --pad:16px; }
+  :root{ --cell:64px; --cols:12; --rows:7; --pad:16px; }
   *{ box-sizing:border-box; }
   body{ margin:0; font-family:system-ui,Segoe UI,Roboto,Ubuntu; color:#e5e7eb; background:#0b1220; }
   .app{ display:flex; min-height:100vh; }
@@ -13,8 +13,8 @@
   .title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .pill{ font-size:10px; background:#111827; border:1px solid #1f2937; padding:2px 8px; border-radius:999px; }
   .palette{ display:grid; gap:8px; }
-  .tile{ display:flex; align-items:center; gap:10px; padding:10px; background:#111827; border:1px solid #1f2937; border-radius:14px; cursor:grab; }
-  .tile img{ width:32px; height:32px; object-fit:contain; }
+  .tile{ display:flex; align-items:center; gap:10px; padding:10px; background:#111827; border:1px solid #1f2937; border-radius:14px; cursor:grab; user-select:none; }
+  .tile img{ width:32px; height:32px; object-fit:contain; pointer-events:none; }
   .meta{ font-size:12px; color:#9ca3af; }
   .actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
   .btn{ padding:10px 12px; border-radius:12px; border:1px solid #1f2937; background:#0b1220; color:#e5e7eb; cursor:pointer; }
@@ -24,6 +24,8 @@
   svg{ display:block; width:100%; height:100vh; touch-action:none; user-select:none; }
   .ghost{ opacity:.7; pointer-events:none; }
   .badge{ position:absolute; top:8px; right:12px; font-size:12px; background:#111827; border:1px solid #1f2937; padding:4px 8px; border-radius:999px; color:#9ca3af; }
+  .node-selected image, .node-selected rect { outline: none; }
+  .node-selected > rect { stroke:#60a5fa; stroke-width:2; fill:none; }
 </style>
 </head>
 <body>
@@ -34,13 +36,48 @@
       <span class="pill">arrastrar</span>
     </div>
     <div class="palette" id="palette">
-      <!-- 👉 Reemplaza data-src por la ruta a TUS imágenes (PNG/SVG con fondo transparente). -->
-      <div class="tile" data-key="hab" data-label="Hábitat" data-src="assets/habitat.svg"><img src="assets/habitat.svg"/><div><div>Hábitat</div><div class="meta">hab</div></div></div>
-      <div class="tile" data-key="solar" data-label="Solar" data-src="assets/solar.svg"><img src="assets/solar.svg"/><div><div>Solar</div><div class="meta">solar</div></div></div>
-      <div class="tile" data-key="lab" data-label="Laboratorio" data-src="assets/lab.svg"><img src="assets/lab.svg"/><div><div>Laboratorio</div><div class="meta">lab</div></div></div>
-      <div class="tile" data-key="comms" data-label="Comms" data-src="assets/comms.svg"><img src="assets/comms.svg"/><div><div>Comms</div><div class="meta">comms</div></div></div>
-      <div class="tile" data-key="store" data-label="Bodega" data-src="assets/store.svg"><img src="assets/store.svg"/><div><div>Bodega</div><div class="meta">store</div></div></div>
-      <div class="tile" data-key="air" data-label="Airlock" data-src="assets/airlock.svg"><img src="assets/airlock.svg"/><div><div>Airlock</div><div class="meta">air</div></div></div>
+<div class="tile" data-key="hab" data-label="Hábitat"
+     data-src="{{ url_for('static', filename='modules/habitat.png') }}">
+  <img src="{{ url_for('static', filename='modules/habitat.png') }}"/>
+  <div><div>Hábitat</div><div class="meta">hab</div></div>
+</div>
+
+<div class="tile" data-key="solar" data-label="Solar"
+     data-src="{{ url_for('static', filename='modules/solar.png') }}">
+  <img src="{{ url_for('static', filename='modules/solar.png') }}"/>
+  <div><div>Solar</div><div class="meta">solar</div></div>
+</div>
+
+<div class="tile" data-key="lab" data-label="Laboratorio"
+     data-src="{{ url_for('static', filename='modules/lab.png') }}">
+  <img src="{{ url_for('static', filename='modules/lab.png') }}"/>
+  <div><div>Laboratorio</div><div class="meta">lab</div></div>
+</div>
+
+<div class="tile" data-key="comms" data-label="Comms"
+     data-src="{{ url_for('static', filename='modules/comms.png') }}">
+  <img src="{{ url_for('static', filename='modules/comms.png') }}"/>
+  <div><div>Comms</div><div class="meta">comms</div></div>
+</div>
+
+<div class="tile" data-key="store" data-label="Bodega"
+     data-src="{{ url_for('static', filename='modules/store.png') }}">
+  <img src="{{ url_for('static', filename='modules/store.png') }}"/>
+  <div><div>Bodega</div><div class="meta">store</div></div>
+</div>
+
+<div class="tile" data-key="air" data-label="Airlock"
+     data-src="{{ url_for('static', filename='modules/airlock.png') }}">
+  <img src="{{ url_for('static', filename='modules/airlock.png') }}"/>
+  <div><div>Airlock</div><div class="meta">air</div></div>
+</div>
+
+<div class="tile" data-key="greenhouse" data-label="GreenHouse"
+     data-src="{{ url_for('static', filename='modules/greenhouse.png') }}">
+  <img src="{{ url_for('static', filename='modules/greenhouse.png') }}"/>
+  <div><div>GreenHouse</div><div class="meta">greenhouse</div></div>
+</div>
+
     </div>
     <div class="actions">
       <button class="btn" id="clear">Limpiar</button>
@@ -58,8 +95,8 @@
     <svg id="stage" aria-label="tablero"></svg>
   </main>
 </div>
+
 <script>
-{% raw %}
 // =====================
 // CONFIG & STATE
 // =====================
@@ -68,18 +105,357 @@ const COLS = parseInt(getComputedStyle(document.documentElement).getPropertyValu
 const ROWS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rows')) || 12;
 const PAD  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--pad'))  || 16;
 
-/** @typedef {{id:string,type:string,label:string,src:string,x:number,y:number}} Node */
-/** @type {Node[]} */
-let nodes = [];
-let selectedId = null;
-let draggingId = null; // node.id cuando arrastramos un existente
-let ghost = null; // {type,label,src,x,y} cuando arrastramos desde paleta
-
 const stage = document.getElementById('stage');
 const palette = document.getElementById('palette');
 const badge = document.getElementById('badge');
-{% endraw %}
+
+const W = COLS * CELL + PAD * 2;
+const H = ROWS * CELL + PAD * 2;
+
+/**
+ * @typedef {Object} Node
+ * @property {string} id
+ * @property {string} type
+ * @property {string} label
+ * @property {string} src
+ * @property {number} x
+ * @property {number} y
+ */
+/** @type {Node[]} */
+let nodes = [];
+let selectedId = null;
+let draggingId = null; // id de nodo existente al arrastrar
+let ghost = null; // {type,label,src,x,y} cuando arrastramos desde paleta
+
+// =====================
+// HELPERS
+// =====================
+const uid = () => (crypto?.randomUUID?.() || Math.random().toString(36).slice(2));
+const clamp = (v,min,max)=>Math.max(min,Math.min(max,v));
+const inBounds = (col,row)=> col>=0 && col<COLS && row>=0 && row<ROWS;
+const snapToCell = (clientX, clientY) => {
+  const pt = screenToSvg(clientX, clientY);
+  const x = clamp(Math.floor((pt.x - PAD) / CELL), 0, COLS-1);
+  const y = clamp(Math.floor((pt.y - PAD) / CELL), 0, ROWS-1);
+  return {col:x, row:y};
+};
+const occupied = (col,row, ignoreId=null) =>
+  nodes.some(n => n.x===col && n.y===row && n.id!==ignoreId);
+
+function screenToSvg(clientX, clientY){
+  const p = stage.createSVGPoint();
+  p.x = clientX; p.y = clientY;
+  const m = stage.getScreenCTM().inverse();
+  return p.matrixTransform(m);
+}
+
+function updateBadge(){ badge.textContent = `${nodes.length} módulo${nodes.length===1?'':'s'}`; }
+
+function setSelected(id){
+  selectedId = id;
+  renderNodes();
+}
+
+function addNode(type,label,src,col,row){
+  if(!inBounds(col,row) || occupied(col,row)) return null;
+  const n = { id:uid(), type,label,src, x:col, y:row };
+  nodes.push(n);
+  setSelected(n.id);
+  renderNodes();
+  updateBadge();
+  return n;
+}
+
+function removeSelected(){
+  if(!selectedId) return;
+  nodes = nodes.filter(n=>n.id!==selectedId);
+  selectedId = null;
+  renderNodes();
+  updateBadge();
+}
+
+// =====================
+// SVG GRID
+// =====================
+function drawGrid(){
+  stage.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  stage.innerHTML = '';
+
+  // fondo
+  const bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  bg.setAttribute('x', 0); bg.setAttribute('y', 0);
+  bg.setAttribute('width', W); bg.setAttribute('height', H);
+  bg.setAttribute('fill', '#0b1220');
+  stage.appendChild(bg);
+
+  // panel
+  const panel = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  panel.setAttribute('x', PAD); panel.setAttribute('y', PAD);
+  panel.setAttribute('width', COLS*CELL); panel.setAttribute('height', ROWS*CELL);
+  panel.setAttribute('fill', '#0f172a');
+  panel.setAttribute('stroke', '#1f2937');
+  stage.appendChild(panel);
+
+  // líneas de grilla
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('stroke', '#1f2937');
+  g.setAttribute('stroke-width', '1');
+  for(let c=1;c<COLS;c++){
+    const x = PAD + c*CELL + .5;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', x); line.setAttribute('y1', PAD);
+    line.setAttribute('x2', x); line.setAttribute('y2', PAD+ROWS*CELL);
+    g.appendChild(line);
+  }
+  for(let r=1;r<ROWS;r++){
+    const y = PAD + r*CELL + .5;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+    line.setAttribute('x1', PAD); line.setAttribute('y1', y);
+    line.setAttribute('x2', PAD+COLS*CELL); line.setAttribute('y2', y);
+    g.appendChild(line);
+  }
+  stage.appendChild(g);
+
+  // contenedor de nodos
+  const nLayer = document.createElementNS('http://www.w3.org/2000/svg','g');
+  nLayer.setAttribute('id','nodes-layer');
+  stage.appendChild(nLayer);
+
+  renderNodes();
+}
+
+function renderNodes(){
+  let layer = document.getElementById('nodes-layer');
+  if(!layer){ drawGrid(); layer = document.getElementById('nodes-layer'); }
+
+  // limpiar
+  layer.innerHTML = '';
+
+  nodes.forEach(n=>{
+    const pos = n._tmp ?? n; // 👈 usar posición provisional si existe (drag preview)
+    const group = document.createElementNS('http://www.w3.org/2000/svg','g');
+    group.setAttribute('transform', `translate(${PAD + pos.x*CELL}, ${PAD + pos.y*CELL})`);
+    group.setAttribute('data-id', n.id);
+    group.classList.add('node');
+
+    // “hitbox” para selección
+    const sel = document.createElementNS('http://www.w3.org/2000/svg','rect');
+    sel.setAttribute('x', 2); sel.setAttribute('y', 2);
+    sel.setAttribute('width', CELL-4); sel.setAttribute('height', CELL-4);
+    sel.setAttribute('fill', 'none');
+    sel.setAttribute('stroke', 'none');
+    group.appendChild(sel);
+
+    const img = document.createElementNS('http://www.w3.org/2000/svg','image');
+    img.setAttributeNS('http://www.w3.org/1999/xlink','href', n.src);
+    img.setAttribute('x', 8); img.setAttribute('y', 8);
+    img.setAttribute('width', CELL-16); img.setAttribute('height', CELL-16);
+    img.setAttribute('preserveAspectRatio','xMidYMid meet');
+    group.appendChild(img);
+
+    if(n.id===selectedId){
+      group.classList.add('node-selected');
+      sel.setAttribute('stroke','#60a5fa');
+      sel.setAttribute('stroke-width','2');
+    }
+
+    // eventos
+    group.addEventListener('mousedown', (ev)=>{
+      ev.preventDefault();
+      setSelected(n.id);
+      draggingId = n.id;
+      window.addEventListener('mousemove', onDragExisting);
+      window.addEventListener('mouseup', onDropExisting, {once:true});
+    });
+
+    layer.appendChild(group);
+  });
+}
+
+// =====================
+// DRAG desde PALETA (ghost)
+// =====================
+palette.querySelectorAll('.tile').forEach(tile=>{
+  tile.addEventListener('mousedown', (ev)=>{
+    ev.preventDefault();
+    const type = tile.dataset.key;
+    const label = tile.dataset.label || type;
+    const src = tile.dataset.src;
+    startGhost(ev.clientX, ev.clientY, {type,label,src});
+  });
+});
+
+function startGhost(cx, cy, data){
+  ghost = { ...data, x:0, y:0 };
+  drawGhostAt(cx, cy);
+  window.addEventListener('mousemove', onGhostMove);
+  window.addEventListener('mouseup', onGhostDrop, {once:true});
+}
+
+function drawGhostAt(cx, cy){
+  const {col,row} = snapToCell(cx, cy);
+  ghost.x = col; ghost.y = row;
+
+  // remove old
+  let g = document.getElementById('ghost');
+  if(g) g.remove();
+
+  // new
+  g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  g.setAttribute('id','ghost');
+  g.classList.add('ghost');
+  g.setAttribute('transform', `translate(${PAD + col*CELL}, ${PAD + row*CELL})`);
+
+  const rect = document.createElementNS('http://www.w3.org/2000/svg','rect');
+  rect.setAttribute('x', 2); rect.setAttribute('y', 2);
+  rect.setAttribute('width', CELL-4); rect.setAttribute('height', CELL-4);
+  rect.setAttribute('fill', occupied(col,row) ? '#7f1d1d' : '#1f2937');
+  rect.setAttribute('stroke', occupied(col,row) ? '#f87171' : '#9ca3af');
+  rect.setAttribute('stroke-dasharray','6 6');
+  g.appendChild(rect);
+
+  const img = document.createElementNS('http://www.w3.org/2000/svg','image');
+  img.setAttributeNS('http://www.w3.org/1999/xlink','href', ghost.src);
+  img.setAttribute('x', 8); img.setAttribute('y', 8);
+  img.setAttribute('width', CELL-16); img.setAttribute('height', CELL-16);
+  img.setAttribute('preserveAspectRatio','xMidYMid meet');
+  g.appendChild(img);
+
+  stage.appendChild(g);
+}
+
+function onGhostMove(ev){
+  drawGhostAt(ev.clientX, ev.clientY);
+}
+
+function onGhostDrop(ev){
+  window.removeEventListener('mousemove', onGhostMove);
+  const {col,row} = snapToCell(ev.clientX, ev.clientY);
+  if(!occupied(col,row)){
+    addNode(ghost.type, ghost.label, ghost.src, col, row);
+  }
+  const g = document.getElementById('ghost');
+  if(g) g.remove();
+  ghost = null;
+}
+
+// =====================
+// DRAG de nodo EXISTENTE
+// =====================
+function onDragExisting(ev){
+  const n = nodes.find(nn=>nn.id===draggingId);
+  if(!n) return;
+  const {col,row} = snapToCell(ev.clientX, ev.clientY);
+  n._tmp = {x:col, y:row}; // 👈 preview
+  renderNodes();
+}
+
+function onDropExisting(ev){
+  window.removeEventListener('mousemove', onDragExisting);
+  const n = nodes.find(nn=>nn.id===draggingId);
+  if(!n){ draggingId=null; return; }
+  const target = n._tmp || {x:n.x, y:n.y};
+  delete n._tmp;
+  const {x:col, y:row} = target;
+  if(inBounds(col,row) && !occupied(col,row, n.id)){
+    n.x = col; n.y = row;
+  }
+  draggingId = null;
+  renderNodes();
+}
+
+// =====================
+// INPUTS: selección, teclado
+// =====================
+// Si haces clic fuera de un nodo (fondo, grilla, etc.), deselecciona
+stage.addEventListener('mousedown', (ev)=>{
+  const isNode = ev.target.closest && ev.target.closest('.node');
+  if(!isNode) setSelected(null);
+});
+
+document.addEventListener('keydown', (ev)=>{
+  if(!selectedId) return;
+  const n = nodes.find(nn=>nn.id===selectedId);
+  if(!n) return;
+
+  const move = (dx,dy)=>{
+    const nx = clamp(n.x+dx, 0, COLS-1);
+    const ny = clamp(n.y+dy, 0, ROWS-1);
+    if(!occupied(nx,ny,n.id)){ n.x = nx; n.y = ny; renderNodes(); }
+  };
+
+  switch(ev.key){
+    case 'ArrowUp': ev.preventDefault(); move(0,-1); break;
+    case 'ArrowDown': ev.preventDefault(); move(0,1); break;
+    case 'ArrowLeft': ev.preventDefault(); move(-1,0); break;
+    case 'ArrowRight': ev.preventDefault(); move(1,0); break;
+    case 'Delete':
+    case 'Backspace':
+      ev.preventDefault(); removeSelected(); break;
+  }
+});
+
+// =====================
+// EXPORT / IMPORT / SAVE
+// =====================
+document.getElementById('export').addEventListener('click', ()=>{
+  const data = JSON.stringify({cols:COLS, rows:ROWS, cell:CELL, nodes}, null, 2);
+  const blob = new Blob([data], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'layout.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+});
+
+document.getElementById('import').addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const obj = JSON.parse(text);
+    if(Array.isArray(obj.nodes)){
+      nodes = obj.nodes.map(n=>({
+        id: n.id || uid(),
+        type: n.type, label: n.label, src: n.src,
+        x: n.x|0, y: n.y|0
+      })).filter(n=>inBounds(n.x,n.y));
+      selectedId = null;
+      renderNodes();
+      updateBadge();
+    }
+  }catch(err){ alert('JSON inválido'); }
+  e.target.value = '';
+});
+
+document.getElementById('save').addEventListener('click', ()=>{
+  localStorage.setItem('builder-layout', JSON.stringify(nodes));
+  alert('Guardado en este navegador.');
+});
+document.getElementById('load').addEventListener('click', ()=>{
+  const raw = localStorage.getItem('builder-layout');
+  if(!raw) return alert('No hay guardado previo.');
+  try{
+    const arr = JSON.parse(raw);
+    if(Array.isArray(arr)){
+      nodes = arr;
+      selectedId = null;
+      renderNodes();
+      updateBadge();
+    }
+  }catch{ alert('Guardado corrupto.'); }
+});
+document.getElementById('clear').addEventListener('click', ()=>{
+  if(confirm('¿Eliminar todos los módulos del tablero?')){
+    nodes = []; selectedId=null; renderNodes(); updateBadge();
+  }
+});
+
+// =====================
+// INIT
+// =====================
+drawGrid();
+updateBadge();
 </script>
 </body>
 </html>
-``` 
