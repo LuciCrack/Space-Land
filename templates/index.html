@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Your Home in Space - NASA Space Apps Challenge</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            background: #111b2e;
+            color: #f7f7f7;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            min-height: 100vh;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(20,40,60,0.85);
+            padding: 2em 2.5em;
+            border-radius: 18px;
+            box-shadow: 0 6px 40px rgba(0,0,0,0.35);
+            max-width: 420px;
+            text-align: center;
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 2.2em;
+            color: #8ecae6;
+        }
+        p {
+            font-size: 1.15em;
+            margin-bottom: 2em;
+            color: #adbce6;
+        }
+        .start-btn {
+            background: linear-gradient(90deg,#219ebc,#23b6e6);
+            color: #fff;
+            padding: 0.85em 2.5em;
+            border: none;
+            border-radius: 32px;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        .start-btn:hover {
+            background: linear-gradient(90deg,#23b6e6,#219ebc);
+            transform: translateY(-2px) scale(1.04);
+        }
+        .footer {
+            margin-top: 2em;
+            color: #5576c6;
+            font-size: 0.95em;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Your Home in Space</h1>
+        <p>
+            Welcome to our NASA Space Apps Challenge project!<br>
+            Design your dream space habitat: choose your location, select materials, and build your own habitat modules.<br>
+            Can you balance comfort, safety, and sustainability beyond Earth? Ready to try?
+        </p>
+        <form action="/editor" method="get">
+            <button class="start-btn" type="submit">🚀 Start Building!</button>
+        </form>
+    </div>
+    <div class="footer">
+        by Team <b>SpaceDreamers</b> – NASA Space Apps Challenge 2025
+    </div>
+</body>
+</html>

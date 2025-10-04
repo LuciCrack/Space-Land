@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Habitat Editor</title>
+    <style>
+        #grid { display: grid; grid-template-columns: repeat(10, 30px); grid-gap: 2px; }
+        .cell { width: 30px; height: 30px; border: 1px solid #ccc; background: #f8f8f8;}
+        .module { width: 28px; height: 28px; background: #8ecae6; cursor: grab; }
+    </style>
+</head>
+<body>
+    <h1>Build Your Space Habitat</h1>
+    <div>
+        <div id="modules">
+            <div class="module" draggable="true" data-type="living">🏠</div>
+            <div class="module" draggable="true" data-type="lab">🔬</div>
+            <!-- Add more modules -->
+        </div>
+        <div id="grid"></div>
+    </div>
+    <button onclick="submitLayout()">Calculate Stats</button>
+    <script>
+        // JS to build a 10x10 grid and handle drag & drop
+        const grid = document.getElementById('grid');
+        for (let i = 0; i < 100; i++) {
+            const cell = document.createElement('div');
+            cell.className = 'cell';
+            cell.dataset.idx = i;
+            cell.ondrop = function(e) {
+                e.preventDefault();
+                this.innerHTML = e.dataTransfer.getData("text/html");
+                this.dataset.type = e.dataTransfer.getData("type");
+            };
+            cell.ondragover = function(e) { e.preventDefault(); };
+            grid.appendChild(cell);
+        }
+        document.querySelectorAll('.module').forEach(mod => {
+            mod.ondragstart = function(e) {
+                e.dataTransfer.setData("text/html", this.outerHTML);
+                e.dataTransfer.setData("type", this.dataset.type);
+            };
+        });
+        function submitLayout() {
+            // Gather grid data, send to Flask
+            let layout = [];
+            document.querySelectorAll('.cell').forEach(cell => {
+                layout.push(cell.dataset.type || null);
+            });
+            fetch('/api/calculate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({layout})
+            }).then(res => res.json()).then(data => alert(JSON.stringify(data)));
+        }
+    </script>
+</body>
+</html>
