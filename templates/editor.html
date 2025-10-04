@@ -1,57 +1,686 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="es">
 <head>
-    <title>Habitat Editor</title>
-    <style>
-        #grid { display: grid; grid-template-columns: repeat(10, 30px); grid-gap: 2px; }
-        .cell { width: 30px; height: 30px; border: 1px solid #ccc; background: #f8f8f8;}
-        .module { width: 28px; height: 28px; background: #8ecae6; cursor: grab; }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Base 2D – Builder (HTML + SVG + JS)</title>
+<style>
+  :root{ --cell:64px; --cols:22; --rows:12; --pad:16px; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:system-ui,Segoe UI,Roboto,Ubuntu; color:#e5e7eb; background:#0b1220; }
+  .app{ display:flex; min-height:100vh; }
+  aside{ width:300px; padding:16px; border-right:1px solid #1f2937; background:#0f172a; }
+  .title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .pill{ font-size:10px; background:#111827; border:1px solid #1f2937; padding:2px 8px; border-radius:999px; }
+  .palette{ display:grid; gap:8px; }
+  .tile{ display:flex; align-items:center; gap:10px; padding:10px; background:#111827; border:1px solid #1f2937; border-radius:14px; cursor:grab; }
+  .tile img{ width:32px; height:32px; object-fit:contain; }
+  .meta{ font-size:12px; color:#9ca3af; }
+  .actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
+  .btn{ padding:10px 12px; border-radius:12px; border:1px solid #1f2937; background:#0b1220; color:#e5e7eb; cursor:pointer; }
+  .btn:hover{ background:#111827; }
+  .hint{ font-size:12px; color:#9ca3af; margin-top:8px; }
+  main{ position:relative; flex:1; }
+  svg{ display:block; width:100%; height:100vh; touch-action:none; user-select:none; }
+  .ghost{ opacity:.7; pointer-events:none; }
+  .badge{ position:absolute; top:8px; right:12px; font-size:12px; background:#111827; border:1px solid #1f2937; padding:4px 8px; border-radius:999px; color:#9ca3af; }
+</style>
 </head>
 <body>
-    <h1>Build Your Space Habitat</h1>
-    <div>
-        <div id="modules">
-            <div class="module" draggable="true" data-type="living">🏠</div>
-            <div class="module" draggable="true" data-type="lab">🔬</div>
-            <!-- Add more modules -->
-        </div>
-        <div id="grid"></div>
+<div class="app">
+  <aside>
+    <div class="title">
+      <h1 style="margin:0;font-size:18px;">Módulos</h1>
+      <span class="pill">arrastrar</span>
     </div>
-    <button onclick="submitLayout()">Calculate Stats</button>
-    <script>
-        // JS to build a 10x10 grid and handle drag & drop
-        const grid = document.getElementById('grid');
-        for (let i = 0; i < 100; i++) {
-            const cell = document.createElement('div');
-            cell.className = 'cell';
-            cell.dataset.idx = i;
-            cell.ondrop = function(e) {
-                e.preventDefault();
-                this.innerHTML = e.dataTransfer.getData("text/html");
-                this.dataset.type = e.dataTransfer.getData("type");
-            };
-            cell.ondragover = function(e) { e.preventDefault(); };
-            grid.appendChild(cell);
-        }
-        document.querySelectorAll('.module').forEach(mod => {
-            mod.ondragstart = function(e) {
-                e.dataTransfer.setData("text/html", this.outerHTML);
-                e.dataTransfer.setData("type", this.dataset.type);
-            };
-        });
-        function submitLayout() {
-            // Gather grid data, send to Flask
-            let layout = [];
-            document.querySelectorAll('.cell').forEach(cell => {
-                layout.push(cell.dataset.type || null);
-            });
-            fetch('/api/calculate', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({layout})
-            }).then(res => res.json()).then(data => alert(JSON.stringify(data)));
-        }
-    </script>
+    <div class="palette" id="palette">
+      <!-- 👉 Reemplaza data-src por la ruta a TUS imágenes (PNG/SVG con fondo transparente). -->
+      <div class="tile" data-key="hab" data-label="Hábitat" data-src="assets/habitat.svg"><img src="assets/habitat.svg"/><div><div>Hábitat</div><div class="meta">hab</div></div></div>
+      <div class="tile" data-key="solar" data-label="Solar" data-src="assets/solar.svg"><img src="assets/solar.svg"/><div><div>Solar</div><div class="meta">solar</div></div></div>
+      <div class="tile" data-key="lab" data-label="Laboratorio" data-src="assets/lab.svg"><img src="assets/lab.svg"/><div><div>Laboratorio</div><div class="meta">lab</div></div></div>
+      <div class="tile" data-key="comms" data-label="Comms" data-src="assets/comms.svg"><img src="assets/comms.svg"/><div><div>Comms</div><div class="meta">comms</div></div></div>
+      <div class="tile" data-key="store" data-label="Bodega" data-src="assets/store.svg"><img src="assets/store.svg"/><div><div>Bodega</div><div class="meta">store</div></div></div>
+      <div class="tile" data-key="air" data-label="Airlock" data-src="assets/airlock.svg"><img src="assets/airlock.svg"/><div><div>Airlock</div><div class="meta">air</div></div></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="clear">Limpiar</button>
+      <button class="btn" id="export">Exportar</button>
+      <label class="btn" style="text-align:center;cursor:pointer;">Importar
+        <input type="file" id="import" accept="application/json" style="display:none;" />
+      </label>
+      <button class="btn" id="save">Guardar</button>
+      <button class="btn" id="load">Cargar</button>
+    </div>
+    <div class="hint">Suelta sobre celdas libres. Clic para seleccionar; flechas para mover; Supr/Backspace para borrar. Exporta/Importa JSON.</div>
+  </aside>
+  <main>
+    <div class="badge" id="badge">0 módulos</div>
+    <svg id="stage" aria-label="tablero"></svg>
+  </main>
+</div>
+<script>
+// =====================
+// CONFIG & STATE
+// =====================
+const CELL = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell')) || 64;
+const COLS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cols')) || 22;
+const ROWS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rows')) || 12;
+const PAD  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--pad'))  || 16;
+
+/** @typedef {{id:string,type:string,label:string,src:string,x:number,y:number}} Node */
+/** @type {Node[]} */
+let nodes = [];
+let selectedId = null;
+let draggingId = null; // node.id cuando arrastramos un existente
+let ghost = null; // {type,label,src,x,y} cuando arrastramos desde paleta
+
+const stage = document.getElementById('stage');
+const palette = document.getElementById('palette');
+const badge = document.getElementById('badge');
+
+// Prepare SVG viewBox
+const W = COLS * CELL + PAD * 2;
+const H = ROWS * CELL + PAD * 2;
+stage.setAttribute('viewBox', `0 0 ${W} ${H}`);
+stage.setAttribute('width', '100%');
+stage.setAttribute('height', '100%');
+
+// =====================
+// HELPERS
+// =====================
+const uid = () => Math.random().toString(36).slice(2, 9);
+const clamp = (v,min,max)=> Math.max(min, Math.min(max, v));
+const snap = (px)=> Math.round(px / CELL);
+const within = (x,y)=> x>=0 && x<COLS && y>=0 && y<ROWS;
+const occupied = (x,y, exceptId=null)=> nodes.some(n=> n.x===x && n.y===y && n.id!==exceptId);
+
+function gridPosFromPointer(evt){
+  const rect = stage.getBoundingClientRect();
+  const px = evt.clientX - rect.left - PAD;
+  const py = evt.clientY - rect.top - PAD;
+  const gx = clamp(snap(px), 0, COLS-1);
+  const gy = clamp(snap(py), 0, ROWS-1);
+  return {gx, gy, px, py};
+}
+
+function computeLinks(){
+  const links = [];
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i], b=nodes[j];
+      const dx = Math.abs(a.x-b.x), dy = Math.abs(a.y-b.y);
+      if(dx+dy===1){ links.push({a:a.id,b:b.id}); }
+    }
+  }
+  return links;
+}
+
+function nodeById(id){ return nodes.find(n=>n.id===id); }
+
+// =====================
+// RENDER
+// =====================
+function clearSVG(){ while(stage.firstChild) stage.removeChild(stage.firstChild); }
+
+function drawGrid(){
+  const bg = rect(0,0,W,H,'#0b1220'); stage.appendChild(bg);
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  const gridRect = rect(PAD, PAD, COLS*CELL, ROWS*CELL, 'url(#grid)');
+  gridRect.setAttribute('stroke', '#1e293b');
+  gridRect.setAttribute('fill', 'url(#grid)');
+  g.appendChild(gridRect);
+  stage.appendChild(g);
+}
+
+function ensureDefs(){
+  let defs = stage.querySelector('defs');
+  if(!defs){ defs = document.createElementNS('http://www.w3.org/2000/svg','defs'); stage.appendChild(defs); }
+  // grid pattern
+  let pat = defs.querySelector('#grid');
+  if(!pat){
+    pat = document.createElementNS('http://www.w3.org/2000/svg','pattern');
+    pat.setAttribute('id','grid');
+    pat.setAttribute('width', CELL);
+    pat.setAttribute('height', CELL);
+    pat.setAttribute('patternUnits','userSpaceOnUse');
+    const p = path(`M ${CELL} 0 L 0 0 0 ${CELL}`);
+    p.setAttribute('stroke', '#1f2937');
+    p.setAttribute('fill', 'none');
+    pat.appendChild(p);
+    defs.appendChild(pat);
+  }
+  // soft shadow
+  let flt = defs.querySelector('#soft');
+  if(!flt){
+    flt = document.createElementNS('http://www.w3.org/2000/svg','filter');
+    flt.setAttribute('id','soft');
+    flt.innerHTML = '<feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.35" />';
+    defs.appendChild(flt);
+  }
+}
+
+function drawLinks(){
+  const links = computeLinks();
+  for(const l of links){
+    const a = nodeById(l.a), b = nodeById(l.b); if(!a||!b) continue;
+    const ax = PAD + a.x*CELL + CELL/2; const ay = PAD + a.y*CELL + CELL/2;
+    const bx = PAD + b.x*CELL + CELL/2; const by = PAD + b.y*CELL + CELL/2;
+    const horiz = ay===by;
+    const x = Math.min(ax,bx), y=Math.min(ay,by);
+    const w = horiz? Math.abs(ax-bx) : 12;
+    const h = horiz? 12 : Math.abs(ay-by);
+    const r = rect(horiz?x:x-6, horiz?y-6:y, w, h, '#fbbf24');
+    r.setAttribute('rx', 6); r.setAttribute('ry', 6); r.setAttribute('opacity','0.8'); r.setAttribute('filter','url(#soft)');
+    stage.appendChild(r);
+  }
+}
+
+function drawNodes(){
+  for(const n of nodes){
+    const cx = PAD + n.x*CELL + CELL/2; const cy = PAD + n.y*CELL + CELL/2;
+    // Hit area (for selection & drag)
+    const hit = rect(cx - CELL*0.42, cy - CELL*0.42, CELL*0.84, CELL*0.84, 'transparent');
+    hit.setAttribute('rx', 12); hit.setAttribute('ry', 12);
+    hit.style.cursor = 'grab';
+    hit.addEventListener('pointerdown', e=>{ e.preventDefault(); selectedId = n.id; draggingId = n.id; render(); });
+    stage.appendChild(hit);
+
+    // Visual base (shadow plate)
+    const plate = rect(cx - CELL*0.42, cy - CELL*0.42, CELL*0.84, CELL*0.84, '#0f172a');
+    plate.setAttribute('rx', 12); plate.setAttribute('ry', 12);
+    plate.setAttribute('filter','url(#soft)');
+    plate.setAttribute('stroke', selectedId===n.id? '#e5e7eb':'#0f172a');
+    plate.setAttribute('stroke-width', selectedId===n.id? '3':'1');
+    stage.appendChild(plate);
+
+    // Image
+    const img = document.createElementNS('http://www.w3.org/2000/svg','image');
+    img.setAttributeNS('http://www.w3.org/1999/xlink','href', n.src);
+    img.setAttribute('x', cx - CELL*0.35);
+    img.setAttribute('y', cy - CELL*0.35);
+    img.setAttribute('width', CELL*0.7);
+    img.setAttribute('height', CELL*0.7);
+    img.setAttribute('preserveAspectRatio','xMidYMid meet');
+    stage.appendChild(img);
+
+    // Label
+    const label = text(n.label, cx, cy + CELL*0.45);
+    label.setAttribute('font-size','12'); label.setAttribute('fill','#cbd5e1');
+    stage.appendChild(label);
+  }
+}
+
+function drawGhost(){
+  if(!ghost) return;
+  const cx = PAD + ghost.x*CELL + CELL/2; const cy = PAD + ghost.y*CELL + CELL/2;
+  const base = rect(cx - CELL*0.42, cy - CELL*0.42, CELL*0.84, CELL*0.84, '#94a3b8');
+  base.setAttribute('rx',12); base.setAttribute('ry',12); base.setAttribute('opacity','0.5');
+  stage.appendChild(base);
+  const img = document.createElementNS('http://www.w3.org/2000/svg','image');
+  img.setAttributeNS('http://www.w3.org/1999/xlink','href', ghost.src);
+  img.setAttribute('x', cx - CELL*0.35);
+  img.setAttribute('y', cy - CELL*0.35);
+  img.setAttribute('width', CELL*0.7);
+  img.setAttribute('height', CELL*0.7);
+  img.setAttribute('opacity','0.7');
+  stage.appendChild(img);
+}
+
+function render(){
+  badge.textContent = `${nodes.length} módulo${nodes.length===1?'':'s'}`;
+  ensureDefs();
+  clearSVG();
+  drawGrid();
+  drawLinks();
+  drawNodes();
+  drawGhost();
+}
+
+// =====================
+// SVG ELEMENT HELPERS
+// =====================
+function rect(x,y,w,h, fill){ const e = document.createElementNS('http://www.w3.org/2000/svg','rect'); e.setAttribute('x',x); e.setAttribute('y',y); e.setAttribute('width',w); e.setAttribute('height',h); if(fill) e.setAttribute('fill',fill); return e; }
+function path(d){ const e = document.createElementNS('http://www.w3.org/2000/svg','path'); e.setAttribute('d', d); return e; }
+function text(str,x,y){ const e = document.createElementNS('http://www.w3.org/2000/svg','text'); e.setAttribute('x',x); e.setAttribute('y',y); e.setAttribute('text-anchor','middle'); e.setAttribute('dominant-baseline','middle'); e.textContent=str; return e; }
+
+// =====================
+// INTERACTION: DRAG from PALETTE
+// =====================
+let hoverCell = null;
+function startGhostFromTile(tile){
+  ghost = { type: tile.dataset.key, label: tile.dataset.label, src: tile.dataset.src, x: 0, y: 0 };
+}
+
+palette.querySelectorAll('.tile').forEach(tile=>{
+  tile.addEventListener('pointerdown', (e)=>{ e.preventDefault(); startGhostFromTile(tile); render(); });
+});
+
+function placeGhost(){
+  if(!ghost) return;
+  if(!occupied(ghost.x, ghost.y)){
+    nodes.push({ id: uid(), type: ghost.type, label: ghost.label, src: ghost.src, x: ghost.x, y: ghost.y });
+  }
+  ghost = null; render();
+}
+
+// =====================
+// INTERACTION: GRID POINTER
+// =====================
+stage.addEventListener('pointermove', (e)=>{
+  const {gx, gy} = gridPosFromPointer(e);
+  hoverCell = [gx, gy];
+  // drag existing node
+  if(draggingId){
+    const n = nodeById(draggingId); if(!n) return;
+    const nx = clamp(gx,0,COLS-1), ny = clamp(gy,0,ROWS-1);
+    if(!occupied(nx, ny, draggingId)){ n.x = nx; n.y = ny; render(); }
+    return;
+  }
+  // move ghost
+  if(ghost){ ghost.x = gx; ghost.y = gy; render(); }
+});
+
+stage.addEventListener('pointerup', ()=>{
+  if(draggingId){ draggingId = null; render(); return; }
+  if(ghost){ placeGhost(); }
+});
+
+stage.addEventListener('pointerdown', (e)=>{
+  // click empty grid clears selection
+  if(e.target === stage){ selectedId = null; render(); }
+});
+
+// =====================
+// KEYBOARD: arrows & delete
+// =====================
+window.addEventListener('keydown', (e)=>{
+  const n = selectedId && nodeById(selectedId);
+  if(!n) return;
+  const dir = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] }[e.key];
+  if(dir){ e.preventDefault();
+    const nx = clamp(n.x + dir[0], 0, COLS-1);
+    const ny = clamp(n.y + dir[1], 0, ROWS-1);
+    if(!occupied(nx, ny, n.id)){ n.x = nx; n.y = ny; render(); }
+  }
+  if(e.key==='Delete' || e.key==='Backspace'){
+    nodes = nodes.filter(m=> m.id !== selectedId);
+    selectedId = null; render();
+  }
+});
+
+// =====================
+// EXPORT / IMPORT / LOCALSTORAGE
+// =====================
+function download(filename, text){
+  const blob = new Blob([text], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+function exportJSON(){ download('layout.json', JSON.stringify({nodes, meta:{cell:CELL, cols:COLS, rows:ROWS}}, null, 2)); }
+function importJSONFile(file){
+  const fr = new FileReader();
+  fr.onload = ()=>{ try{ const data = JSON.parse(String(fr.result)); if(Array.isArray(data.nodes)){ nodes = data.nodes; selectedId=null; render(); } }catch{ alert('Archivo JSON inválido'); } };
+  fr.readAsText(file);
+}
+
+function saveLocal(){ localStorage.setItem('base2d-layout', JSON.stringify(nodes)); }
+function loadLocal(){ const txt = localStorage.getItem('base2d-layout'); if(txt){ try{ nodes = JSON.parse(txt)||[]; }catch{} } render(); }
+
+// Buttons
+document.getElementById('export').addEventListener('click', exportJSON);
+document.getElementById('import').addEventListener('change', (e)=>{ const f = e.target.files?.[0]; if(f) importJSONFile(f); e.target.value=''; });
+document.getElementById('clear').addEventListener('click', ()=>{ nodes=[]; selectedId=null; render(); });
+document.getElementById('save').addEventListener('click', saveLocal);
+document.getElementById('load').addEventListener('click', loadLocal);
+
+// =====================
+// INITIAL RENDER
+// =====================
+render();
+</script>
+</body>
+</html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Base 2D – Builder (HTML + SVG + JS)</title>
+<style>
+  :root{ --cell:64px; --cols:22; --rows:12; --pad:16px; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:system-ui,Segoe UI,Roboto,Ubuntu; color:#e5e7eb; background:#0b1220; }
+  .app{ display:flex; min-height:100vh; }
+  aside{ width:300px; padding:16px; border-right:1px solid #1f2937; background:#0f172a; }
+  .title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+  .pill{ font-size:10px; background:#111827; border:1px solid #1f2937; padding:2px 8px; border-radius:999px; }
+  .palette{ display:grid; gap:8px; }
+  .tile{ display:flex; align-items:center; gap:10px; padding:10px; background:#111827; border:1px solid #1f2937; border-radius:14px; cursor:grab; }
+  .tile img{ width:32px; height:32px; object-fit:contain; }
+  .meta{ font-size:12px; color:#9ca3af; }
+  .actions{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0; }
+  .btn{ padding:10px 12px; border-radius:12px; border:1px solid #1f2937; background:#0b1220; color:#e5e7eb; cursor:pointer; }
+  .btn:hover{ background:#111827; }
+  .hint{ font-size:12px; color:#9ca3af; margin-top:8px; }
+  main{ position:relative; flex:1; }
+  svg{ display:block; width:100%; height:100vh; touch-action:none; user-select:none; }
+  .ghost{ opacity:.7; pointer-events:none; }
+  .badge{ position:absolute; top:8px; right:12px; font-size:12px; background:#111827; border:1px solid #1f2937; padding:4px 8px; border-radius:999px; color:#9ca3af; }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <div class="title">
+      <h1 style="margin:0;font-size:18px;">Módulos</h1>
+      <span class="pill">arrastrar</span>
+    </div>
+    <div class="palette" id="palette">
+      <!-- 👉 Reemplaza data-src por la ruta a TUS imágenes (PNG/SVG con fondo transparente). -->
+      <div class="tile" data-key="hab" data-label="Hábitat" data-src="assets/habitat.svg"><img src="assets/habitat.svg"/><div><div>Hábitat</div><div class="meta">hab</div></div></div>
+      <div class="tile" data-key="solar" data-label="Solar" data-src="assets/solar.svg"><img src="assets/solar.svg"/><div><div>Solar</div><div class="meta">solar</div></div></div>
+      <div class="tile" data-key="lab" data-label="Laboratorio" data-src="assets/lab.svg"><img src="assets/lab.svg"/><div><div>Laboratorio</div><div class="meta">lab</div></div></div>
+      <div class="tile" data-key="comms" data-label="Comms" data-src="assets/comms.svg"><img src="assets/comms.svg"/><div><div>Comms</div><div class="meta">comms</div></div></div>
+      <div class="tile" data-key="store" data-label="Bodega" data-src="assets/store.svg"><img src="assets/store.svg"/><div><div>Bodega</div><div class="meta">store</div></div></div>
+      <div class="tile" data-key="air" data-label="Airlock" data-src="assets/airlock.svg"><img src="assets/airlock.svg"/><div><div>Airlock</div><div class="meta">air</div></div></div>
+    </div>
+    <div class="actions">
+      <button class="btn" id="clear">Limpiar</button>
+      <button class="btn" id="export">Exportar</button>
+      <label class="btn" style="text-align:center;cursor:pointer;">Importar
+        <input type="file" id="import" accept="application/json" style="display:none;" />
+      </label>
+      <button class="btn" id="save">Guardar</button>
+      <button class="btn" id="load">Cargar</button>
+    </div>
+    <div class="hint">Suelta sobre celdas libres. Clic para seleccionar; flechas para mover; Supr/Backspace para borrar. Exporta/Importa JSON.</div>
+  </aside>
+  <main>
+    <div class="badge" id="badge">0 módulos</div>
+    <svg id="stage" aria-label="tablero"></svg>
+  </main>
+</div>
+<script>
+// =====================
+// CONFIG & STATE
+// =====================
+const CELL = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell')) || 64;
+const COLS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cols')) || 22;
+const ROWS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rows')) || 12;
+const PAD  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--pad'))  || 16;
+
+/** @typedef {{id:string,type:string,label:string,src:string,x:number,y:number}} Node */
+/** @type {Node[]} */
+let nodes = [];
+let selectedId = null;
+let draggingId = null; // node.id cuando arrastramos un existente
+let ghost = null; // {type,label,src,x,y} cuando arrastramos desde paleta
+
+const stage = document.getElementById('stage');
+const palette = document.getElementById('palette');
+const badge = document.getElementById('badge');
+
+// Prepare SVG viewBox
+const W = COLS * CELL + PAD * 2;
+const H = ROWS * CELL + PAD * 2;
+stage.setAttribute('viewBox', `0 0 ${W} ${H}`);
+stage.setAttribute('width', '100%');
+stage.setAttribute('height', '100%');
+
+// =====================
+// HELPERS
+// =====================
+const uid = () => Math.random().toString(36).slice(2, 9);
+const clamp = (v,min,max)=> Math.max(min, Math.min(max, v));
+const snap = (px)=> Math.round(px / CELL);
+const within = (x,y)=> x>=0 && x<COLS && y>=0 && y<ROWS;
+const occupied = (x,y, exceptId=null)=> nodes.some(n=> n.x===x && n.y===y && n.id!==exceptId);
+
+function gridPosFromPointer(evt){
+  const rect = stage.getBoundingClientRect();
+  const px = evt.clientX - rect.left - PAD;
+  const py = evt.clientY - rect.top - PAD;
+  const gx = clamp(snap(px), 0, COLS-1);
+  const gy = clamp(snap(py), 0, ROWS-1);
+  return {gx, gy, px, py};
+}
+
+function computeLinks(){
+  const links = [];
+  for(let i=0;i<nodes.length;i++){
+    for(let j=i+1;j<nodes.length;j++){
+      const a=nodes[i], b=nodes[j];
+      const dx = Math.abs(a.x-b.x), dy = Math.abs(a.y-b.y);
+      if(dx+dy===1){ links.push({a:a.id,b:b.id}); }
+    }
+  }
+  return links;
+}
+
+function nodeById(id){ return nodes.find(n=>n.id===id); }
+
+// =====================
+// RENDER
+// =====================
+function clearSVG(){ while(stage.firstChild) stage.removeChild(stage.firstChild); }
+
+function drawGrid(){
+  const bg = rect(0,0,W,H,'#0b1220'); stage.appendChild(bg);
+  const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+  const gridRect = rect(PAD, PAD, COLS*CELL, ROWS*CELL, 'url(#grid)');
+  gridRect.setAttribute('stroke', '#1e293b');
+  gridRect.setAttribute('fill', 'url(#grid)');
+  g.appendChild(gridRect);
+  stage.appendChild(g);
+}
+
+function ensureDefs(){
+  let defs = stage.querySelector('defs');
+  if(!defs){ defs = document.createElementNS('http://www.w3.org/2000/svg','defs'); stage.appendChild(defs); }
+  // grid pattern
+  let pat = defs.querySelector('#grid');
+  if(!pat){
+    pat = document.createElementNS('http://www.w3.org/2000/svg','pattern');
+    pat.setAttribute('id','grid');
+    pat.setAttribute('width', CELL);
+    pat.setAttribute('height', CELL);
+    pat.setAttribute('patternUnits','userSpaceOnUse');
+    const p = path(`M ${CELL} 0 L 0 0 0 ${CELL}`);
+    p.setAttribute('stroke', '#1f2937');
+    p.setAttribute('fill', 'none');
+    pat.appendChild(p);
+    defs.appendChild(pat);
+  }
+  // soft shadow
+  let flt = defs.querySelector('#soft');
+  if(!flt){
+    flt = document.createElementNS('http://www.w3.org/2000/svg','filter');
+    flt.setAttribute('id','soft');
+    flt.innerHTML = '<feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.35" />';
+    defs.appendChild(flt);
+  }
+}
+
+function drawLinks(){
+  const links = computeLinks();
+  for(const l of links){
+    const a = nodeById(l.a), b = nodeById(l.b); if(!a||!b) continue;
+    const ax = PAD + a.x*CELL + CELL/2; const ay = PAD + a.y*CELL + CELL/2;
+    const bx = PAD + b.x*CELL + CELL/2; const by = PAD + b.y*CELL + CELL/2;
+    const horiz = ay===by;
+    const x = Math.min(ax,bx), y=Math.min(ay,by);
+    const w = horiz? Math.abs(ax-bx) : 12;
+    const h = horiz? 12 : Math.abs(ay-by);
+    const r = rect(horiz?x:x-6, horiz?y-6:y, w, h, '#fbbf24');
+    r.setAttribute('rx', 6); r.setAttribute('ry', 6); r.setAttribute('opacity','0.8'); r.setAttribute('filter','url(#soft)');
+    stage.appendChild(r);
+  }
+}
+
+function drawNodes(){
+  for(const n of nodes){
+    const cx = PAD + n.x*CELL + CELL/2; const cy = PAD + n.y*CELL + CELL/2;
+    // Hit area (for selection & drag)
+    const hit = rect(cx - CELL*0.42, cy - CELL*0.42, CELL*0.84, CELL*0.84, 'transparent');
+    hit.setAttribute('rx', 12); hit.setAttribute('ry', 12);
+    hit.style.cursor = 'grab';
+    hit.addEventListener('pointerdown', e=>{ e.preventDefault(); selectedId = n.id; draggingId = n.id; render(); });
+    stage.appendChild(hit);
+
+    // Visual base (shadow plate)
+    const plate = rect(cx - CELL*0.42, cy - CELL*0.42, CELL*0.84, CELL*0.84, '#0f172a');
+    plate.setAttribute('rx', 12); plate.setAttribute('ry', 12);
+    plate.setAttribute('filter','url(#soft)');
+    plate.setAttribute('stroke', selectedId===n.id? '#e5e7eb':'#0f172a');
+    plate.setAttribute('stroke-width', selectedId===n.id? '3':'1');
+    stage.appendChild(plate);
+
+    // Image
+    const img = document.createElementNS('http://www.w3.org/2000/svg','image');
+    img.setAttributeNS('http://www.w3.org/1999/xlink','href', n.src);
+    img.setAttribute('x', cx - CELL*0.35);
+    img.setAttribute('y', cy - CELL*0.35);
+    img.setAttribute('width', CELL*0.7);
+    img.setAttribute('height', CELL*0.7);
+    img.setAttribute('preserveAspectRatio','xMidYMid meet');
+    stage.appendChild(img);
+
+    // Label
+    const label = text(n.label, cx, cy + CELL*0.45);
+    label.setAttribute('font-size','12'); label.setAttribute('fill','#cbd5e1');
+    stage.appendChild(label);
+  }
+}
+
+function drawGhost(){
+  if(!ghost) return;
+  const cx = PAD + ghost.x*CELL + CELL/2; const cy = PAD + ghost.y*CELL + CELL/2;
+  const base = rect(cx - CELL*0.42, cy - CELL*0.42, CELL*0.84, CELL*0.84, '#94a3b8');
+  base.setAttribute('rx',12); base.setAttribute('ry',12); base.setAttribute('opacity','0.5');
+  stage.appendChild(base);
+  const img = document.createElementNS('http://www.w3.org/2000/svg','image');
+  img.setAttributeNS('http://www.w3.org/1999/xlink','href', ghost.src);
+  img.setAttribute('x', cx - CELL*0.35);
+  img.setAttribute('y', cy - CELL*0.35);
+  img.setAttribute('width', CELL*0.7);
+  img.setAttribute('height', CELL*0.7);
+  img.setAttribute('opacity','0.7');
+  stage.appendChild(img);
+}
+
+function render(){
+  badge.textContent = `${nodes.length} módulo${nodes.length===1?'':'s'}`;
+  ensureDefs();
+  clearSVG();
+  drawGrid();
+  drawLinks();
+  drawNodes();
+  drawGhost();
+}
+
+// =====================
+// SVG ELEMENT HELPERS
+// =====================
+function rect(x,y,w,h, fill){ const e = document.createElementNS('http://www.w3.org/2000/svg','rect'); e.setAttribute('x',x); e.setAttribute('y',y); e.setAttribute('width',w); e.setAttribute('height',h); if(fill) e.setAttribute('fill',fill); return e; }
+function path(d){ const e = document.createElementNS('http://www.w3.org/2000/svg','path'); e.setAttribute('d', d); return e; }
+function text(str,x,y){ const e = document.createElementNS('http://www.w3.org/2000/svg','text'); e.setAttribute('x',x); e.setAttribute('y',y); e.setAttribute('text-anchor','middle'); e.setAttribute('dominant-baseline','middle'); e.textContent=str; return e; }
+
+// =====================
+// INTERACTION: DRAG from PALETTE
+// =====================
+let hoverCell = null;
+function startGhostFromTile(tile){
+  ghost = { type: tile.dataset.key, label: tile.dataset.label, src: tile.dataset.src, x: 0, y: 0 };
+}
+
+palette.querySelectorAll('.tile').forEach(tile=>{
+  tile.addEventListener('pointerdown', (e)=>{ e.preventDefault(); startGhostFromTile(tile); render(); });
+});
+
+function placeGhost(){
+  if(!ghost) return;
+  if(!occupied(ghost.x, ghost.y)){
+    nodes.push({ id: uid(), type: ghost.type, label: ghost.label, src: ghost.src, x: ghost.x, y: ghost.y });
+  }
+  ghost = null; render();
+}
+
+// =====================
+// INTERACTION: GRID POINTER
+// =====================
+stage.addEventListener('pointermove', (e)=>{
+  const {gx, gy} = gridPosFromPointer(e);
+  hoverCell = [gx, gy];
+  // drag existing node
+  if(draggingId){
+    const n = nodeById(draggingId); if(!n) return;
+    const nx = clamp(gx,0,COLS-1), ny = clamp(gy,0,ROWS-1);
+    if(!occupied(nx, ny, draggingId)){ n.x = nx; n.y = ny; render(); }
+    return;
+  }
+  // move ghost
+  if(ghost){ ghost.x = gx; ghost.y = gy; render(); }
+});
+
+stage.addEventListener('pointerup', ()=>{
+  if(draggingId){ draggingId = null; render(); return; }
+  if(ghost){ placeGhost(); }
+});
+
+stage.addEventListener('pointerdown', (e)=>{
+  // click empty grid clears selection
+  if(e.target === stage){ selectedId = null; render(); }
+});
+
+// =====================
+// KEYBOARD: arrows & delete
+// =====================
+window.addEventListener('keydown', (e)=>{
+  const n = selectedId && nodeById(selectedId);
+  if(!n) return;
+  const dir = { ArrowLeft:[-1,0], ArrowRight:[1,0], ArrowUp:[0,-1], ArrowDown:[0,1] }[e.key];
+  if(dir){ e.preventDefault();
+    const nx = clamp(n.x + dir[0], 0, COLS-1);
+    const ny = clamp(n.y + dir[1], 0, ROWS-1);
+    if(!occupied(nx, ny, n.id)){ n.x = nx; n.y = ny; render(); }
+  }
+  if(e.key==='Delete' || e.key==='Backspace'){
+    nodes = nodes.filter(m=> m.id !== selectedId);
+    selectedId = null; render();
+  }
+});
+
+// =====================
+// EXPORT / IMPORT / LOCALSTORAGE
+// =====================
+function download(filename, text){
+  const blob = new Blob([text], { type:'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+}
+
+function exportJSON(){ download('layout.json', JSON.stringify({nodes, meta:{cell:CELL, cols:COLS, rows:ROWS}}, null, 2)); }
+function importJSONFile(file){
+  const fr = new FileReader();
+  fr.onload = ()=>{ try{ const data = JSON.parse(String(fr.result)); if(Array.isArray(data.nodes)){ nodes = data.nodes; selectedId=null; render(); } }catch{ alert('Archivo JSON inválido'); } };
+  fr.readAsText(file);
+}
+
+function saveLocal(){ localStorage.setItem('base2d-layout', JSON.stringify(nodes)); }
+function loadLocal(){ const txt = localStorage.getItem('base2d-layout'); if(txt){ try{ nodes = JSON.parse(txt)||[]; }catch{} } render(); }
+
+// Buttons
+document.getElementById('export').addEventListener('click', exportJSON);
+document.getElementById('import').addEventListener('change', (e)=>{ const f = e.target.files?.[0]; if(f) importJSONFile(f); e.target.value=''; });
+document.getElementById('clear').addEventListener('click', ()=>{ nodes=[]; selectedId=null; render(); });
+document.getElementById('save').addEventListener('click', saveLocal);
+document.getElementById('load').addEventListener('click', loadLocal);
+
+// =====================
+// INITIAL RENDER
+// =====================
+render();
+</script>
 </body>
 </html>
