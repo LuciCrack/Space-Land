@@ -47,6 +47,8 @@ def location():
     mission = session['mission']
     if mission in ['moon', 'mars', 'orbit']: 
         # Pass mission to render only the locations for the intended mission
+        if mission == 'orbit':
+            return redirect(url_for('editor'))
         return render_template('location.html', mission=session.get('mission'))
 
     return redirect(url_for('mission'))
