@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="es">
+<html lang="en">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -9,7 +9,7 @@
   *{ box-sizing:border-box; }
   body{ margin:0; font-family:system-ui,Segoe UI,Roboto,Ubuntu; color:#e5e7eb; background:#0b1220; }
   .app{ display:flex; min-height:100vh; }
-  aside{ width:300px; padding:16px; border-right:1px solid #1f2937; background:#0f172a; }
+  aside{ width:300px; padding:16px; border-right:1px solid #1f2937; background:; }
   .title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .pill{ font-size:10px; background:#111827; border:1px solid #1f2937; padding:2px 8px; border-radius:999px; }
   .palette{ display:grid; gap:8px; }
@@ -23,77 +23,199 @@
   main{ position:relative; flex:1; }
   svg{ display:block; width:100%; height:100vh; touch-action:none; user-select:none; }
   .ghost{ opacity:.7; pointer-events:none; }
-  .badge{ position:absolute; top:8px; right:12px; font-size:12px; background:#111827; border:1px solid #1f2937; padding:4px 8px; border-radius:999px; color:#9ca3af; }
+  .badge{ position:absolute; top:8px; right:12px; font-size:12px; background:#271111; border:1px solid #1f2937; padding:4px 8px; border-radius:999px; color:#9ca3af; }
   .node-selected image, .node-selected rect { outline: none; }
   .node-selected > rect { stroke:#60a5fa; stroke-width:2; fill:none; }
+  .info-btn img { filter: brightness(1.5); }
+  .info-btn:focus { outline: 2px solid #60a5fa; }
+  #module-details-menu {
+    position: absolute;
+    top: 0;
+    left: 300px; /* width of aside */
+    width: 300px;
+    height: 100vh;
+    background: #111827;
+    color: #e5e7eb;
+    box-shadow: -2px 0 8px rgba(0,0,0,0.15);
+    z-index: 50;
+    transition: opacity 0.2s;
+    opacity: 0;
+    pointer-events: none;
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+  }
+  #module-details-menu.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
 </style>
 </head>
 <body>
+<div style="width:100%; display:flex; justify-content:center; align-items:center; gap:32px; margin:32px 0 0 0;">
+  <img src="{{ url_for('static', filename='icons/Book_Gray.png') }}" alt="Book" title="Book" style="width:40px; height:40px;">
+  <img src="{{ url_for('static', filename='icons/Warning.png') }}" alt="Warning" title="Warning" style="width:40px; height:40px;">
+  <img src="{{ url_for('static', filename='icons/Rocket.png') }}" alt="Rocket" title="Rocket" style="width:40px; height:40px;">
+  <img src="{{ url_for('static', filename='icons/VR.png') }}" alt="VR" title="VR" style="width:40px; height:40px;">
+</div>
 <div class="app">
   <aside>
     <div class="title">
-      <h1 style="margin:0;font-size:18px;">Módulos</h1>
-      <span class="pill">arrastrar</span>
+      <h1 style="margin:0;font-size:18px;">Modules</h1>
+      <span class="pill">drag</span>
     </div>
     <div class="palette" id="palette">
-<div class="tile" data-key="hab" data-label="Hábitat"
-     data-src="{{ url_for('static', filename='modules/habitat.png') }}">
+<div class="tile" data-key="hab" data-label="Habitat"
+     data-src="{{ url_for('static', filename='modules/habitat.png') }}"
+     data-description="Module for crew housing."
+     data-energy-produced="0 MW"
+     data-weight="25,000 kg"
+     data-size="Large"
+     data-purpose="Living Quarters">
   <img src="{{ url_for('static', filename='modules/habitat.png') }}"/>
-  <div><div>Hábitat</div><div class="meta">hab</div></div>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Habitat</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/Info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">hab</div>
+  </div>
 </div>
 
 <div class="tile" data-key="solar" data-label="Solar"
-     data-src="{{ url_for('static', filename='modules/solar.png') }}">
+     data-src="{{ url_for('static', filename='modules/solar.png') }}"
+     data-description="Module for solar energy generation."
+     data-energy-produced="5 MW"
+     data-weight="10,000 kg"
+     data-size="Medium"
+     data-purpose="Energy Generation">
   <img src="{{ url_for('static', filename='modules/solar.png') }}"/>
-  <div><div>Solar</div><div class="meta">solar</div></div>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Solar</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">solar</div>
+  </div>
 </div>
 
-<div class="tile" data-key="lab" data-label="Laboratorio"
-     data-src="{{ url_for('static', filename='modules/lab.png') }}">
+<div class="tile" data-key="lab" data-label="Laboratory"
+     data-src="{{ url_for('static', filename='modules/lab.png') }}"
+     data-description="Module for scientific research."
+     data-energy-produced="1 MW"
+     data-weight="15,000 kg"
+     data-size="Medium"
+     data-purpose="Research">
   <img src="{{ url_for('static', filename='modules/lab.png') }}"/>
-  <div><div>Laboratorio</div><div class="meta">lab</div></div>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Laboratory</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">lab</div>
+  </div>
 </div>
 
-<div class="tile" data-key="comms" data-label="Comms"
-     data-src="{{ url_for('static', filename='modules/comms.png') }}">
-  <img src="{{ url_for('static', filename='modules/comms.png') }}"/>
-  <div><div>Comms</div><div class="meta">comms</div></div>
-</div>
-
-<div class="tile" data-key="store" data-label="Bodega"
-     data-src="{{ url_for('static', filename='modules/store.png') }}">
+<div class="tile" data-key="store" data-label="Storage"
+     data-src="{{ url_for('static', filename='modules/store.png') }}"
+     data-description="Module for storing supplies."
+     data-energy-produced="0 MW"
+     data-weight="20,000 kg"
+     data-size="Large"
+     data-purpose="Storage">
   <img src="{{ url_for('static', filename='modules/store.png') }}"/>
-  <div><div>Bodega</div><div class="meta">store</div></div>
-</div>
-
-<div class="tile" data-key="air" data-label="Airlock"
-     data-src="{{ url_for('static', filename='modules/airlock.png') }}">
-  <img src="{{ url_for('static', filename='modules/airlock.png') }}"/>
-  <div><div>Airlock</div><div class="meta">air</div></div>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Storage</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">store</div>
+  </div>
 </div>
 
 <div class="tile" data-key="greenhouse" data-label="GreenHouse"
-     data-src="{{ url_for('static', filename='modules/greenhouse.png') }}">
+     data-src="{{ url_for('static', filename='modules/greenhouse.png') }}"
+     data-description="Module for growing plants."
+     data-energy-produced="2 MW"
+     data-weight="18,000 kg"
+     data-size="Medium"
+     data-purpose="Agriculture">
   <img src="{{ url_for('static', filename='modules/greenhouse.png') }}"/>
-  <div><div>GreenHouse</div><div class="meta">greenhouse</div></div>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>GreenHouse</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">greenhouse</div>
+  </div>
 </div>
 
     </div>
     <div class="actions">
-      <button class="btn" id="clear">Limpiar</button>
-      <button class="btn" id="export">Exportar</button>
-      <label class="btn" style="text-align:center;cursor:pointer;">Importar
+      <button class="btn" id="clear">Clear</button>
+      <button class="btn" id="export">Export</button>
+      <label class="btn" style="text-align:center;cursor:pointer;">Import
         <input type="file" id="import" accept="application/json" style="display:none;" />
       </label>
-      <button class="btn" id="save">Guardar</button>
-      <button class="btn" id="load">Cargar</button>
+      <button class="btn" id="save">Save</button>
+      <button class="btn" id="load">Load</button>
     </div>
-    <div class="hint">Suelta sobre celdas libres. Clic para seleccionar; flechas para mover; Supr/Backspace para borrar. Exporta/Importa JSON.</div>
+    <div class="hint">Drop onto free cells. Click to select; use arrow keys to move; Delete/Backspace to remove. Export/Import JSON.</div>
   </aside>
+  <!-- Move sidebar here, after aside, before main -->
+  <div id="module-details-menu">
+    <button class="close-btn" id="close-details-btn" style="background:none;border:none;color:#e5e7eb;cursor:pointer;font-size:16px;">Close</button>
+    <h2 id="module-name">Module Name</h2>
+    <span class="detail-label">Description:</span>
+    <span class="detail-value" id="module-description"></span><br>
+    <span class="detail-label">Energy Produced:</span>
+    <span class="detail-value" id="module-energy"></span><br>
+    <span class="detail-label">Weight:</span>
+    <span class="detail-value" id="module-weight"></span><br>
+    <span class="detail-label">Size:</span>
+    <span class="detail-value" id="module-size"></span><br>
+    <span class="detail-label">Purpose:</span>
+    <span class="detail-value" id="module-purpose"></span>
+  </div>
   <main>
-    <div class="badge" id="badge">0 módulos</div>
-    <svg id="stage" aria-label="tablero"></svg>
+    <div class="badge" id="badge">0 Module</div>
+    <svg id="stage" aria-label="board"></svg>
+    <!-- Add 5 icons in the lower right corner -->
+    <div style="
+      position: absolute;
+      right: 24px;
+      bottom: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      z-index: 10;
+      align-items: flex-end;
+    ">
+      <img src="{{ url_for('static', filename='icons/water.png') }}" alt="Water" title="Water" style="width:36px; height:36px;">
+      <img src="{{ url_for('static', filename='icons/weight.png') }}" alt="Weight" title="Weight" style="width:36px; height:36px;">
+      <img src="{{ url_for('static', filename='icons/electricity.png') }}" alt="Electricity" title="Electricity" style="width:36px; height:36px;">
+      <img src="{{ url_for('static', filename='icons/oxygen.png') }}" alt="Oxygen" title="Oxygen" style="width:36px; height:36px;">
+      <img src="{{ url_for('static', filename='icons/Eye.png') }}" alt="Other" title="Other" style="width:36px; height:36px;">
+    </div>
   </main>
+</div>
+
+<div id="vr-video-modal" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:999; align-items:center; justify-content:center;">
+  <video id="vr-video" width="800" controls style="border-radius:12px; box-shadow:0 0 32px #000;">
+    <source src="{{ url_for('static', filename='video/vr_view.mp4') }}" type="video/mp4">
+    Your browser does not support the video tag.
+  </video>
+  <button id="close-vr-video" style="position:absolute; top:32px; right:48px; font-size:2rem; background:none; color:#fff; border:none; cursor:pointer;">&times;</button>
 </div>
 
 <script>
@@ -101,8 +223,8 @@
 // CONFIG & STATE
 // =====================
 const CELL = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cell')) || 64;
-const COLS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cols')) || 22;
-const ROWS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rows')) || 12;
+const COLS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--cols')) || 12;
+const ROWS = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--rows')) || 7;
 const PAD  = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--pad'))  || 16;
 
 const stage = document.getElementById('stage');
@@ -124,8 +246,8 @@ const H = ROWS * CELL + PAD * 2;
 /** @type {Node[]} */
 let nodes = [];
 let selectedId = null;
-let draggingId = null; // id de nodo existente al arrastrar
-let ghost = null; // {type,label,src,x,y} cuando arrastramos desde paleta
+let draggingId = null; // id of existing node when dragging
+let ghost = null; // {type,label,src,x,y} when dragging from palette
 
 // =====================
 // HELPERS
@@ -149,7 +271,7 @@ function screenToSvg(clientX, clientY){
   return p.matrixTransform(m);
 }
 
-function updateBadge(){ badge.textContent = `${nodes.length} módulo${nodes.length===1?'':'s'}`; }
+function updateBadge(){ badge.textContent = `${nodes.length} Module${nodes.length===1?'':'s'}`; }
 
 function setSelected(id){
   selectedId = id;
@@ -181,7 +303,7 @@ function drawGrid(){
   stage.setAttribute('viewBox', `0 0 ${W} ${H}`);
   stage.innerHTML = '';
 
-  // fondo
+  // background
   const bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
   bg.setAttribute('x', 0); bg.setAttribute('y', 0);
   bg.setAttribute('width', W); bg.setAttribute('height', H);
@@ -192,11 +314,11 @@ function drawGrid(){
   const panel = document.createElementNS('http://www.w3.org/2000/svg','rect');
   panel.setAttribute('x', PAD); panel.setAttribute('y', PAD);
   panel.setAttribute('width', COLS*CELL); panel.setAttribute('height', ROWS*CELL);
-  panel.setAttribute('fill', '#0f172a');
+  panel.setAttribute('fill', 'none');
   panel.setAttribute('stroke', '#1f2937');
   stage.appendChild(panel);
 
-  // líneas de grilla
+  // grid lines
   const g = document.createElementNS('http://www.w3.org/2000/svg','g');
   g.setAttribute('stroke', '#1f2937');
   g.setAttribute('stroke-width', '1');
@@ -216,7 +338,7 @@ function drawGrid(){
   }
   stage.appendChild(g);
 
-  // contenedor de nodos
+  // nodes container
   const nLayer = document.createElementNS('http://www.w3.org/2000/svg','g');
   nLayer.setAttribute('id','nodes-layer');
   stage.appendChild(nLayer);
@@ -228,17 +350,41 @@ function renderNodes(){
   let layer = document.getElementById('nodes-layer');
   if(!layer){ drawGrid(); layer = document.getElementById('nodes-layer'); }
 
-  // limpiar
+  // clear
   layer.innerHTML = '';
 
+  // Draw bridges first
+  nodes.forEach(n1 => {
+    nodes.forEach(n2 => {
+      // Only horizontal bridges (left/right)
+      if (n1.id !== n2.id && n1.y === n2.y && Math.abs(n1.x - n2.x) === 1) {
+        // Always draw bridge from left to right
+        const leftNode = n1.x < n2.x ? n1 : n2;
+        const rightNode = n1.x > n2.x ? n1 : n2;
+        // Bridge position: between leftNode and rightNode
+        const bx = PAD + leftNode.x * CELL + CELL / 2;
+        const by = PAD + leftNode.y * CELL + CELL / 2 -5; // <-- Lower the bridge by 24px (was -16, now +8)
+        const bridge = document.createElementNS('http://www.w3.org/2000/svg','image');
+        bridge.setAttributeNS('http://www.w3.org/1999/xlink','href', "{{ url_for('static', filename='Modules/Bridge_H.png') }}");
+        bridge.setAttribute('x', bx);
+        bridge.setAttribute('y', by);
+        bridge.setAttribute('width', CELL);
+        bridge.setAttribute('height', 32);
+        bridge.setAttribute('preserveAspectRatio','xMidYMid meet');
+        layer.appendChild(bridge);
+      }
+    });
+  });
+
+  // Draw nodes
   nodes.forEach(n=>{
-    const pos = n._tmp ?? n; // 👈 usar posición provisional si existe (drag preview)
+    const pos = n._tmp ?? n; // use temporary position if exists (drag preview)
     const group = document.createElementNS('http://www.w3.org/2000/svg','g');
     group.setAttribute('transform', `translate(${PAD + pos.x*CELL}, ${PAD + pos.y*CELL})`);
     group.setAttribute('data-id', n.id);
     group.classList.add('node');
 
-    // “hitbox” para selección
+    // hitbox for selection
     const sel = document.createElementNS('http://www.w3.org/2000/svg','rect');
     sel.setAttribute('x', 2); sel.setAttribute('y', 2);
     sel.setAttribute('width', CELL-4); sel.setAttribute('height', CELL-4);
@@ -259,7 +405,7 @@ function renderNodes(){
       sel.setAttribute('stroke-width','2');
     }
 
-    // eventos
+    // events
     group.addEventListener('mousedown', (ev)=>{
       ev.preventDefault();
       setSelected(n.id);
@@ -273,16 +419,42 @@ function renderNodes(){
 }
 
 // =====================
-// DRAG desde PALETA (ghost)
+// DRAG from PALETTE (ghost)
 // =====================
 palette.querySelectorAll('.tile').forEach(tile=>{
   tile.addEventListener('mousedown', (ev)=>{
+    // Only start drag if NOT clicking the info button
+    if (ev.target.closest('.info-btn')) return;
     ev.preventDefault();
     const type = tile.dataset.key;
     const label = tile.dataset.label || type;
     const src = tile.dataset.src;
     startGhost(ev.clientX, ev.clientY, {type,label,src});
   });
+});
+
+// Info button event for showing module details sidebar
+palette.querySelectorAll('.tile').forEach(tile=>{
+  const infoBtn = tile.querySelector('.info-btn');
+  if(infoBtn) {
+    infoBtn.addEventListener('click', function(ev){
+      ev.stopPropagation();
+      ev.preventDefault();
+      const sidebar = document.getElementById('module-details-menu');
+      document.getElementById('module-name').textContent = tile.dataset.label || tile.dataset.key || '';
+      document.getElementById('module-description').textContent = tile.dataset.description || '';
+      document.getElementById('module-energy').textContent = tile.dataset.energyProduced || tile.dataset.energy_produced || '';
+      document.getElementById('module-weight').textContent = tile.dataset.weight || '';
+      document.getElementById('module-size').textContent = tile.dataset.size || '';
+      document.getElementById('module-purpose').textContent = tile.dataset.purpose || '';
+      sidebar.classList.add('visible');
+    });
+  }
+});
+
+// Close button for sidebar
+document.getElementById('close-details-btn').addEventListener('click', function(){
+  document.getElementById('module-details-menu').classList.remove('visible');
 });
 
 function startGhost(cx, cy, data){
@@ -340,13 +512,13 @@ function onGhostDrop(ev){
 }
 
 // =====================
-// DRAG de nodo EXISTENTE
+// DRAG of EXISTING NODE
 // =====================
 function onDragExisting(ev){
   const n = nodes.find(nn=>nn.id===draggingId);
   if(!n) return;
   const {col,row} = snapToCell(ev.clientX, ev.clientY);
-  n._tmp = {x:col, y:row}; // 👈 preview
+  n._tmp = {x:col, y:row}; // preview
   renderNodes();
 }
 
@@ -365,9 +537,9 @@ function onDropExisting(ev){
 }
 
 // =====================
-// INPUTS: selección, teclado
+// INPUTS: selection, keyboard
 // =====================
-// Si haces clic fuera de un nodo (fondo, grilla, etc.), deselecciona
+// If you click outside a node (background, grid, etc.), deselect
 stage.addEventListener('mousedown', (ev)=>{
   const isNode = ev.target.closest && ev.target.closest('.node');
   if(!isNode) setSelected(null);
@@ -424,17 +596,17 @@ document.getElementById('import').addEventListener('change', async (e)=>{
       renderNodes();
       updateBadge();
     }
-  }catch(err){ alert('JSON inválido'); }
+  }catch(err){ alert('Invalid JSON'); }
   e.target.value = '';
 });
 
 document.getElementById('save').addEventListener('click', ()=>{
   localStorage.setItem('builder-layout', JSON.stringify(nodes));
-  alert('Guardado en este navegador.');
+  alert('Saved in this browser.');
 });
 document.getElementById('load').addEventListener('click', ()=>{
   const raw = localStorage.getItem('builder-layout');
-  if(!raw) return alert('No hay guardado previo.');
+  if(!raw) return alert('No previous save.');
   try{
     const arr = JSON.parse(raw);
     if(Array.isArray(arr)){
@@ -443,11 +615,35 @@ document.getElementById('load').addEventListener('click', ()=>{
       renderNodes();
       updateBadge();
     }
-  }catch{ alert('Guardado corrupto.'); }
+  }catch{ alert('Corrupted save.'); }
 });
 document.getElementById('clear').addEventListener('click', ()=>{
-  if(confirm('¿Eliminar todos los módulos del tablero?')){
+  if(confirm('Remove all modules from the board?')){
     nodes = []; selectedId=null; renderNodes(); updateBadge();
+  }
+});
+
+// Play VR video when clicking the VR icon
+document.querySelectorAll('img[alt="VR"]').forEach(img => {
+  img.addEventListener('click', function() {
+    document.getElementById('vr-video-modal').style.display = 'flex';
+    const video = document.getElementById('vr-video');
+    video.currentTime = 0;
+    video.play();
+  });
+});
+
+// Close modal
+document.getElementById('close-vr-video').addEventListener('click', function() {
+  document.getElementById('vr-video-modal').style.display = 'none';
+  document.getElementById('vr-video').pause();
+});
+
+// Optional: close modal when clicking outside video
+document.getElementById('vr-video-modal').addEventListener('click', function(e) {
+  if(e.target === this){
+    this.style.display = 'none';
+    document.getElementById('vr-video').pause();
   }
 });
 
