@@ -57,6 +57,7 @@
   <img src="{{ url_for('static', filename='icons/Warning.png') }}" alt="Warning" title="Warning" style="width:40px; height:40px;">
   <img src="{{ url_for('static', filename='icons/Rocket.png') }}" alt="Rocket" title="Rocket" style="width:40px; height:40px;">
   <img src="{{ url_for('static', filename='icons/VR.png') }}" alt="VR" title="VR" style="width:40px; height:40px;">
+  <img id="btn-3dview" src="{{ url_for('static', filename='icons/3d.png') }}" alt="3D" title="3D View" style="width:40px; height:40px; cursor:pointer;">
 </div>
 <div class="app">
   <aside>
@@ -354,17 +355,15 @@ function renderNodes(){
   // clear
   layer.innerHTML = '';
 
-  // Draw bridges first
+  // Draw horizontal bridges first
   nodes.forEach(n1 => {
     nodes.forEach(n2 => {
       // Only horizontal bridges (left/right)
       if (n1.id !== n2.id && n1.y === n2.y && Math.abs(n1.x - n2.x) === 1) {
         // Always draw bridge from left to right
         const leftNode = n1.x < n2.x ? n1 : n2;
-        const rightNode = n1.x > n2.x ? n1 : n2;
-        // Bridge position: between leftNode and rightNode
         const bx = PAD + leftNode.x * CELL + CELL / 2;
-        const by = PAD + leftNode.y * CELL + CELL / 2 -5; // <-- Lower the bridge by 24px (was -16, now +8)
+        const by = PAD + leftNode.y * CELL + CELL / 2 - 5;
         const bridge = document.createElementNS('http://www.w3.org/2000/svg','image');
         bridge.setAttributeNS('http://www.w3.org/1999/xlink','href', "{{ url_for('static', filename='Modules/Bridge_H.png') }}");
         bridge.setAttribute('x', bx);
@@ -373,6 +372,21 @@ function renderNodes(){
         bridge.setAttribute('height', 32);
         bridge.setAttribute('preserveAspectRatio','xMidYMid meet');
         layer.appendChild(bridge);
+      }
+      // Vertical bridges (up/down)
+      if (n1.id !== n2.id && n1.x === n2.x && Math.abs(n1.y - n2.y) === 1) {
+        // Always draw bridge from top to bottom
+        const topNode = n1.y < n2.y ? n1 : n2;
+        const bx = PAD + topNode.x * CELL + CELL / 2 - 15;
+        const by = PAD + topNode.y * CELL + CELL / 2;
+        const bridgeV = document.createElementNS('http://www.w3.org/2000/svg','image');
+        bridgeV.setAttributeNS('http://www.w3.org/1999/xlink','href', "{{ url_for('static', filename='Modules/Bridge_V.png') }}");
+        bridgeV.setAttribute('x', bx);
+        bridgeV.setAttribute('y', by);
+        bridgeV.setAttribute('width', 32);
+        bridgeV.setAttribute('height', CELL);
+        bridgeV.setAttribute('preserveAspectRatio','xMidYMid meet');
+        layer.appendChild(bridgeV);
       }
     });
   });
@@ -646,6 +660,11 @@ document.getElementById('vr-video-modal').addEventListener('click', function(e) 
     this.style.display = 'none';
     document.getElementById('vr-video').pause();
   }
+});
+
+// 3D button redirects to /view
+document.getElementById('btn-3dview').addEventListener('click', function() {
+  window.location.href = "/view";
 });
 
 // =====================
