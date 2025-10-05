@@ -12,7 +12,7 @@
   aside{ width:300px; padding:16px; border-right:1px solid #1f2937; background:; }
   .title{ display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
   .pill{ font-size:10px; background:#111827; border:1px solid #1f2937; padding:2px 8px; border-radius:999px; }
-  .palette{ display:grid; gap:8px; }
+  .palette{ display:grid; gap:8px; max-height:500px; overflow-y:auto; padding-right:4px; }
   .tile{ display:flex; align-items:center; gap:10px; padding:10px; background:#111827; border:1px solid #1f2937; border-radius:14px; cursor:grab; user-select:none; }
   .tile img{ width:32px; height:32px; object-fit:contain; pointer-events:none; }
   .meta{ font-size:12px; color:#9ca3af; }
@@ -52,6 +52,9 @@
 </style>
 </head>
 <body>
+  <div style="position:fixed; top:18px; left:18px; z-index:100;">
+    <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" style="height:56px; width:auto;">
+  </div>
 <div style="width:100%; display:flex; justify-content:center; align-items:center; gap:32px; margin:32px 0 0 0;">
   <img src="{{ url_for('static', filename='icons/Warning.png') }}" alt="Warning" title="Warning" style="width:40px; height:40px;">
   <img src="{{ url_for('static', filename='icons/Rocket.png') }}" alt="Rocket" title="Rocket" style="width:40px; height:40px;">
@@ -65,71 +68,156 @@
       <span class="pill">drag</span>
     </div>
     <div class="palette" id="palette">
-<div class="tile" data-key="hab" data-label="Habitat"
-     data-src="{{ url_for('static', filename='modules/habitat.png') }}"
-     data-description="Module for crew housing."
-     data-energy-produced="0 MW"
-     data-weight="25,000 kg"
+
+<!-- Base -->
+<div class="tile" data-key="base" data-label="Base"
+     data-src="{{ url_for('static', filename='modules/base.png') }}"
+     data-description="Main base module for command and control."
+     data-energy-produced="3 MW"
+     data-weight="30,000 kg"
      data-size="Large"
-     data-purpose="Living Quarters">
-  <img src="{{ url_for('static', filename='modules/habitat.png') }}"/>
+     data-purpose="Command & Control">
+  <img src="{{ url_for('static', filename='modules/base.png') }}"/>
   <div>
     <div style="display:flex; align-items:center; gap:8px;">
-      <span>Habitat</span>
+      <span>Base</span>
       <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
         <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
       </button>
     </div>
-    <div class="meta">hab</div>
+    <div class="meta">base</div>
   </div>
 </div>
 
-<div class="tile" data-key="solar" data-label="Solar"
-     data-src="{{ url_for('static', filename='modules/solar.png') }}"
-     data-description="Module for solar energy generation."
-     data-energy-produced="5 MW"
-     data-weight="10,000 kg"
+<!-- Kitchen -->
+<div class="tile" data-key="kitchen" data-label="Kitchen"
+     data-src="{{ url_for('static', filename='modules/kitchen.png') }}"
+     data-description="Module for food preparation and cooking."
+     data-energy-produced="0 MW"
+     data-weight="8,000 kg"
      data-size="Medium"
-     data-purpose="Energy Generation">
-  <img src="{{ url_for('static', filename='modules/solar.png') }}"/>
+     data-purpose="Food Preparation">
+  <img src="{{ url_for('static', filename='modules/kitchen.png') }}"/>
   <div>
     <div style="display:flex; align-items:center; gap:8px;">
-      <span>Solar</span>
+      <span>Kitchen</span>
       <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
         <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
       </button>
     </div>
-    <div class="meta">solar</div>
+    <div class="meta">kitchen</div>
   </div>
 </div>
 
-<div class="tile" data-key="lab" data-label="Laboratory"
-     data-src="{{ url_for('static', filename='modules/lab.png') }}"
-     data-description="Module for scientific research."
+<!-- Comms -->
+<div class="tile" data-key="comms" data-label="Comms"
+     data-src="{{ url_for('static', filename='modules/comms.png') }}"
+     data-description="Module for communication systems."
+     data-energy-produced="0.5 MW"
+     data-weight="5,000 kg"
+     data-size="Small"
+     data-purpose="Communication">
+  <img src="{{ url_for('static', filename='modules/comms.png') }}"/>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Comms</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">comms</div>
+  </div>
+</div>
+
+<!-- Entertainment -->
+<div class="tile" data-key="entertainment" data-label="Entertainment"
+     data-src="{{ url_for('static', filename='modules/entertainment.png') }}"
+     data-description="Module for crew recreation and entertainment."
+     data-energy-produced="0 MW"
+     data-weight="6,000 kg"
+     data-size="Small"
+     data-purpose="Recreation">
+  <img src="{{ url_for('static', filename='modules/entertainment.png') }}"/>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Entertainment</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">entertainment</div>
+  </div>
+</div>
+
+<!-- Oxygen -->
+<div class="tile" data-key="oxygen" data-label="Oxygen"
+     data-src="{{ url_for('static', filename='modules/oxygen.png') }}"
+     data-description="Module for oxygen generation."
      data-energy-produced="1 MW"
-     data-weight="15,000 kg"
-     data-size="Medium"
-     data-purpose="Research">
-  <img src="{{ url_for('static', filename='modules/lab.png') }}"/>
+     data-weight="7,000 kg"
+     data-size="Small"
+     data-purpose="Life Support">
+  <img src="{{ url_for('static', filename='modules/oxygen.png') }}"/>
   <div>
     <div style="display:flex; align-items:center; gap:8px;">
-      <span>Laboratory</span>
+      <span>Oxygen</span>
       <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
         <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
       </button>
     </div>
-    <div class="meta">lab</div>
+    <div class="meta">oxygen</div>
   </div>
 </div>
 
-<div class="tile" data-key="store" data-label="Storage"
-     data-src="{{ url_for('static', filename='modules/store.png') }}"
+<!-- Water -->
+<div class="tile" data-key="water" data-label="Water"
+     data-src="{{ url_for('static', filename='modules/water.png') }}"
+     data-description="Module for water purification and supply."
+     data-energy-produced="1 MW"
+     data-weight="9,000 kg"
+     data-size="Small"
+     data-purpose="Water Supply">
+  <img src="{{ url_for('static', filename='modules/water.png') }}"/>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Water</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">water</div>
+  </div>
+</div>
+
+<!-- Bathroom -->
+<div class="tile" data-key="bathroom" data-label="Bathroom"
+     data-src="{{ url_for('static', filename='modules/bathroom.png') }}"
+     data-description="Module for hygiene and sanitation."
+     data-energy-produced="0 MW"
+     data-weight="6,000 kg"
+     data-size="Small"
+     data-purpose="Sanitation">
+  <img src="{{ url_for('static', filename='modules/bathroom.png') }}"/>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Bathroom</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">bathroom</div>
+  </div>
+</div>
+
+<!-- Storage -->
+<div class="tile" data-key="storage" data-label="Storage"
+     data-src="{{ url_for('static', filename='modules/storage.png') }}"
      data-description="Module for storing supplies."
      data-energy-produced="0 MW"
      data-weight="20,000 kg"
      data-size="Large"
      data-purpose="Storage">
-  <img src="{{ url_for('static', filename='modules/store.png') }}"/>
+  <img src="{{ url_for('static', filename='modules/storage.png') }}"/>
   <div>
     <div style="display:flex; align-items:center; gap:8px;">
       <span>Storage</span>
@@ -141,25 +229,7 @@
   </div>
 </div>
 
-<div class="tile" data-key="greenhouse" data-label="GreenHouse"
-     data-src="{{ url_for('static', filename='modules/greenhouse.png') }}"
-     data-description="Module for growing plants."
-     data-energy-produced="2 MW"
-     data-weight="18,000 kg"
-     data-size="Medium"
-     data-purpose="Agriculture">
-  <img src="{{ url_for('static', filename='modules/greenhouse.png') }}"/>
-  <div>
-    <div style="display:flex; align-items:center; gap:8px;">
-      <span>GreenHouse</span>
-      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
-        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
-      </button>
-    </div>
-    <div class="meta">greenhouse</div>
-  </div>
-</div>
-
+<!-- Medical -->
 <div class="tile" data-key="medical" data-label="Medical"
      data-src="{{ url_for('static', filename='modules/medical.png') }}"
      data-description="Module for medical support and emergencies."
@@ -179,22 +249,63 @@
   </div>
 </div>
 
-<div class="tile" data-key="base" data-label="Base"
-     data-src="{{ url_for('static', filename='modules/base.png') }}"
-     data-description="Main base module for command and control."
-     data-energy-produced="3 MW"
-     data-weight="30,000 kg"
-     data-size="Large"
-     data-purpose="Command & Control">
-  <img src="{{ url_for('static', filename='modules/base.png') }}"/>
+<!-- Laboratory -->
+<div class="tile" data-key="lab" data-label="Laboratory"
+     data-src="{{ url_for('static', filename='modules/lab.png') }}"
+     data-description="Module for scientific research."
+     data-energy-produced="1 MW"
+     data-weight="15,000 kg"
+     data-size="Medium"
+     data-purpose="Research">
+  <img src="{{ url_for('static', filename='modules/lab.png') }}"/>
   <div>
     <div style="display:flex; align-items:center; gap:8px;">
-      <span>Base</span>
+      <span>Laboratory</span>
       <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
         <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
       </button>
     </div>
-    <div class="meta">base</div>
+    <div class="meta">lab</div>
+  </div>
+</div>
+
+<!-- Solar -->
+<div class="tile" data-key="solar" data-label="Solar"
+     data-src="{{ url_for('static', filename='modules/solar.png') }}"
+     data-description="Module for solar energy generation."
+     data-energy-produced="5 MW"
+     data-weight="10,000 kg"
+     data-size="Medium"
+     data-purpose="Energy Generation">
+  <img src="{{ url_for('static', filename='modules/solar.png') }}"/>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Solar</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">solar</div>
+  </div>
+</div>
+
+<!-- Bedroom -->
+<div class="tile" data-key="bedroom" data-label="Bedroom"
+     data-src="{{ url_for('static', filename='modules/bedroom.png') }}"
+     data-description="Module for crew sleeping quarters."
+     data-energy-produced="0 MW"
+     data-weight="11,000 kg"
+     data-size="Medium"
+     data-purpose="Sleeping Quarters">
+  <img src="{{ url_for('static', filename='modules/bedroom.png') }}"/>
+  <div>
+    <div style="display:flex; align-items:center; gap:8px;">
+      <span>Bedroom</span>
+      <button class="info-btn" title="Info" style="background:none;border:none;cursor:pointer;padding:0;">
+        <img src="{{ url_for('static', filename='icons/info.png') }}" alt="Info" style="width:18px;height:18px;">
+      </button>
+    </div>
+    <div class="meta">bedroom</div>
   </div>
 </div>
 
@@ -989,3 +1100,4 @@ updateBadge();
 </script>
 </body>
 </html>
+`

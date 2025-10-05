@@ -11,67 +11,143 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/RGBELoader.js"></script>
 
   <script>
     const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 5000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, logarithmicDepthBuffer: true });
-    renderer.setClearColor(0x22232a);
-    renderer.setSize(window.innerWidth, window.innerHeight);
+    const camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 5000);
+
+    // Transparent canvas + better color management
+    const renderer = new THREE.WebGLRenderer({ antialias:true, logarithmicDepthBuffer:true, alpha:true });
+    renderer.setSize(innerWidth, innerHeight);
+    renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+    renderer.setClearColor(0x000000, 0);                 // keep your transparent BG
     renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.physicallyCorrectLights = true;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.25;
     document.body.appendChild(renderer.domElement);
 
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
-    controls.minDistance = 1;
-    controls.maxDistance = 2000;
 
-    // Ambient and directional lights
-    scene.add(new THREE.AmbientLight(0xffffff, 1.5));
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-    dirLight.position.set(100, 200, 100);
-    dirLight.castShadow = true;
-    scene.add(dirLight);
+    // Blender-ish lighting
+    const sun = new THREE.DirectionalLight(0xffffff, 4.0);
+    sun.position.set(6, 10, 4);
+    sun.castShadow = true;
+    scene.add(sun);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x777777, 0.8));
 
-    // Optional: add a hemisphere light for softer shadows
-    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
+    // Optional: HDR environment for nicer materials (keeps canvas transparent because we DON'T set scene.background)
+    // new THREE.RGBELoader().setPath('/static/hdr/').load('studio.hdr', (hdr) => {
+    //   hdr.mapping = THREE.EquirectangularReflectionMapping;
+    //   scene.environment = hdr; // reflections only; background stays transparent
+    // });
 
-    // Load model
+    // Load model (keeps your icon/transparency handling exactly as you wrote it)
+    let gltfScene = null;
+    let targetRotation = -Math.PI / 4; // -90 degrees in radians
+    let animationActive = false;
+    let cameraStartDist = 0;
+    let cameraEndDist = 0;
+    let cameraStartPos = null;
+    let cameraEndPos = null;
+    let cameraStartY = 0;
+    let cameraEndY = 0;
+
     const loader = new THREE.GLTFLoader();
-    loader.load('/static/domo5.glb', function (gltf) {
-      gltf.scene.traverse(function (child) {
+    loader.load('/static/domo5.glb', (gltf) => {
+      gltf.scene.traverse((child) => {
         if (child.isMesh) {
           child.castShadow = true;
           child.receiveShadow = true;
           child.material.flatShading = false;
           child.material.needsUpdate = true;
+
+          // Your icon/alpha fix
+          if (child.material.map && child.material.map.format === THREE.RGBAFormat) {
+            child.material.transparent = true;
+            child.material.alphaTest = 0.01;
+          }
         }
       });
-      scene.add(gltf.scene);
 
-      // Fit camera to model
+      gltfScene = gltf.scene;
+      gltfScene.rotation.y = 0; // Start at 0
+      scene.add(gltfScene);
+
+      // Frame camera (prepare for animated zoom)
       const box = new THREE.Box3().setFromObject(gltf.scene);
       const size = box.getSize(new THREE.Vector3());
       const center = box.getCenter(new THREE.Vector3());
-
       const maxDim = Math.max(size.x, size.y, size.z);
-      const distance = maxDim * 2.2;
-      camera.position.set(center.x, center.y + maxDim * 0.5, center.z + distance);
-      camera.near = 0.1;
-      camera.far = distance * 4;
-      camera.updateProjectionMatrix();
-      camera.lookAt(center);
 
-      controls.target.copy(center);
-      controls.update();
+      cameraStartDist = maxDim * 1.5; // initial (far)
+      cameraEndDist = maxDim * 0.2;   // final (zoomed in 3x)
+      cameraStartY = center.y + cameraStartDist * 0.6;
+      cameraEndY = center.y + cameraEndDist * 0.6;
+
+      cameraStartPos = new THREE.Vector3(center.x + cameraStartDist, cameraStartY, center.z + cameraStartDist);
+      cameraEndPos = new THREE.Vector3(center.x + cameraEndDist, cameraEndY, center.z + cameraEndDist);
+
+      camera.position.copy(cameraStartPos);
+      camera.near = 0.1; camera.far = cameraStartDist * 10; camera.updateProjectionMatrix();
+      controls.target.copy(center); controls.update();
+
+      animationActive = true;
     });
 
     function animate() {
       requestAnimationFrame(animate);
-      controls.update();
+
+      // Only update controls if animation is finished
+      if (!animationActive) {
+        controls.enablePan = true;
+        controls.enableRotate = true;
+        controls.update();
+      } else {
+        controls.enablePan = false;
+        controls.enableRotate = false;
+      }
+
+      // Animate initial rotation and zoom
+      if (animationActive && gltfScene) {
+        const speed = 0.02; // radians per frame (was 0.03, now much faster)
+        let doneRot = false, doneZoom = false;
+
+        // Animate rotation
+        if (gltfScene.rotation.y > targetRotation) {
+          gltfScene.rotation.y -= speed;
+          if (gltfScene.rotation.y <= targetRotation) {
+            gltfScene.rotation.y = targetRotation;
+            doneRot = true;
+          }
+        } else {
+          doneRot = true;
+        }
+
+        // Animate camera zoom
+        const lerpSpeed = 0.06; // was 0.04, now much faster
+        camera.position.lerp(cameraEndPos, lerpSpeed);
+        if (camera.position.distanceTo(cameraEndPos) < 0.2) { // << increased threshold
+          camera.position.copy(cameraEndPos);
+          doneZoom = true;
+        }
+
+        if (doneRot && doneZoom) {
+          animationActive = false;
+        }
+      }
+
       renderer.render(scene, camera);
     }
     animate();
+
+    addEventListener('resize', () => {
+      camera.aspect = innerWidth/innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(innerWidth, innerHeight);
+    });
   </script>
 </body>
 </html>
