@@ -71,5 +71,10 @@ def calculate():
 def view():
     return render_template('3dview.html')
 
+
+@app.route('/moon')
+def moon():
+    return render_template('moon.html')
+
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=5000, debug=True)

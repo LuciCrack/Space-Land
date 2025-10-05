@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <title>Luna con banderas</title>
+  <style>
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; margin:0; }
+    body{ background:#22232a; color:#e5e7eb; font-family:system-ui,Segoe UI,Roboto,Ubuntu; }
+    .app{ display:flex; height:100%; }
+    aside{ width:260px; padding:14px; border-right:1px solid #363a45; background:#1b1d24; }
+    .title{ font-weight:600; margin:6px 0 12px; }
+    .flags{ display:flex; flex-direction:column; gap:8px; }
+    .flag-btn{
+      display:flex; align-items:center; gap:8px;
+      width:100%; padding:10px 12px; border:1px solid #2b2f3a; border-radius:10px;
+      background:#101218; color:#e5e7eb; cursor:pointer;
+    }
+    .flag-emoji{ font-size:18px; }
+    .flag-btn:hover{ background:#151824; }
+    #viewport{ flex:1; position:relative; }
+    canvas{ display:block; width:100%; height:100%; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="title">Banderitas</div>
+      <div class="flags">
+        <!-- Puedes cambiar emoji y texto a gusto -->
+        <button class="flag-btn" data-id="A"><span class="flag-emoji">🚩</span> Bandera A</button>
+        <button class="flag-btn" data-id="B"><span class="flag-emoji">🚩</span> Bandera B</button>
+        <button class="flag-btn" data-id="C"><span class="flag-emoji">🚩</span> Bandera C</button>
+        <button class="flag-btn" data-id="D"><span class="flag-emoji">🚩</span> Bandera D</button>
+      </div>
+    </aside>
+    <div id="viewport"></div>
+  </div>
+
+  <!-- three.js r128 + extras -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
+
+  <script>
+  let scene, camera, renderer, controls;
+  let moon, moonRadius = 1, center = new THREE.Vector3(0,0,0);
+  const markers = {}; // id -> THREE.Object3D
+
+  // === Configura aquí tus 4 banderitas:
+  // lat (°N), lon (°E). Ajusta colores si quieres.
+  const FLAGS = [
+    { id:"A", name:"Bandera A", lat:  10, lon:   0, color: 0xff4d4d },
+    { id:"B", name:"Bandera B", lat: -15, lon:  60, color: 0x4dd2ff },
+    { id:"C", name:"Bandera C", lat:  25, lon:-120, color: 0xffd24d },
+    { id:"D", name:"Bandera D", lat: -35, lon: -40, color: 0x9d7bff },
+  ];
+
+  init();
+  loadMoon();
+
+  function init(){
+    scene = new THREE.Scene();
+
+    camera = new THREE.PerspectiveCamera(60, window.innerWidth/window.innerHeight, 0.1, 5000);
+    renderer = new THREE.WebGLRenderer({ antialias:true, logarithmicDepthBuffer:true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio || 1);
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    document.getElementById("viewport").appendChild(renderer.domElement);
+
+    controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+
+    // Luces
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.3);
+    dirLight.position.set(100,200,100);
+    scene.add(dirLight);
+    scene.add(new THREE.HemisphereLight(0xffffff, 0x444444, 0.6));
+
+    // Clicks del panel
+    document.querySelectorAll(".flag-btn").forEach(btn=>{
+      btn.addEventListener("click", ()=>{
+        focusFlag(btn.dataset.id);
+      });
+    });
+
+    window.addEventListener('resize', onResize);
+    animate();
+  }
+
+  function loadMoon(){
+    const loader = new THREE.GLTFLoader();
+    // Mantén tu ruta (Flask): /static/moon.glb
+    loader.load('/static/moon.glb', (gltf)=>{
+      moon = gltf.scene;
+
+      // Sombreado/material
+      moon.traverse(obj=>{
+        if(obj.isMesh){
+          obj.castShadow = true;
+          obj.receiveShadow = true;
+          if (obj.material) {
+            obj.material.flatShading = false;
+            obj.material.needsUpdate = true;
+          }
+        }
+      });
+
+      // Centrar la Luna en el origen para que las fórmulas lat/lon sean sencillas
+      const box = new THREE.Box3().setFromObject(moon);
+      const sphere = box.getBoundingSphere(new THREE.Sphere());
+      center.copy(sphere.center);
+      moon.position.sub(center); // ahora el centro de la Luna queda en (0,0,0)
+      scene.add(moon);
+
+      moonRadius = sphere.radius -370;
+
+      // Cámara inicial (misma idea que tu código)
+      const distance = moonRadius * 2.2;
+      camera.position.set(0, moonRadius * 0.5, distance);
+      camera.near = 0.1;
+      camera.far = distance * 6;
+      camera.updateProjectionMatrix();
+      controls.target.set(0,0,0);
+      controls.minDistance = moonRadius * 0.6;
+      controls.maxDistance = moonRadius * 10;
+      controls.update();
+
+      // Crear banderas (como “pins” 3D)
+      FLAGS.forEach(addFlagPin);
+    });
+  }
+
+  // Convierte lat/lon (°) a vector unitario (Y-up)
+  function latLonToUnit(latDeg, lonDeg){
+    const lat = THREE.MathUtils.degToRad(latDeg);
+    const lon = THREE.MathUtils.degToRad(lonDeg);
+    const x = Math.cos(lat) * Math.cos(lon);
+    const y = Math.sin(lat);
+    const z = Math.cos(lat) * Math.sin(lon);
+    return new THREE.Vector3(x,y,z).normalize();
+  }
+
+  function addFlagPin(cfg){
+    const normal = latLonToUnit(cfg.lat, cfg.lon);
+    const r = moonRadius;
+
+    // Tamaños a partir de FLAG_STYLE
+    const FLAG_STYLE = {
+      poleH: 0.06,        // altura del poste (fracción del radio lunar)
+      poleR: 0.005,       // radio del poste
+      clothW: 0.045,      // ancho del paño
+      clothH: 0.025,      // alto del paño
+      surfaceOffset: 0.012 // cuánto sobresale desde la superficie
+    };
+
+    const postH = r * FLAG_STYLE.poleH;
+    const postR = r * FLAG_STYLE.poleR;
+    const clothW = r * FLAG_STYLE.clothW;
+    const clothH = r * FLAG_STYLE.clothH;
+
+    // Materiales
+    const matPost  = new THREE.MeshStandardMaterial({ color: 0xdddddd, metalness: 0.2, roughness: 0.6 });
+    const matCloth = new THREE.MeshStandardMaterial({ color: 0xff0000, roughness: 0.75, metalness: 0, side: THREE.DoubleSide });
+
+    // Poste (eje local +Y)
+    const post = new THREE.Mesh(new THREE.CylinderGeometry(postR, postR, postH, 16), matPost);
+    post.position.y = postH / 2;
+
+    // Bolita decorativa arriba (opcional)
+    const finial = new THREE.Mesh(new THREE.SphereGeometry(postR * 1.3, 16, 12), matPost);
+    finial.position.y = postH;
+
+    // “Paño” de la bandera (rectángulo delgado) que sale lateral al poste
+    const cloth = new THREE.Mesh(new THREE.PlaneGeometry(clothW, clothH, 8, 1), matCloth);
+    cloth.position.set(postR + clothW/2, postH - clothH/2, 0); // en la punta del poste
+    // Opcional: curvita sutil para que no se vea completamente plano
+    {
+      const g = cloth.geometry;
+      const pos = g.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i);
+        pos.setZ(i, Math.sin((x/clothW) * Math.PI) * clothH * 0.06);
+      }
+      g.computeVertexNormals();
+      g.attributes.position.needsUpdate = true;
+    }
+
+    // Agrupar
+    const pin = new THREE.Group();
+    pin.add(post);
+    pin.add(finial);
+    pin.add(cloth);
+
+    // Orientar el pin: de “+Y” local hacia la normal de la superficie
+    const quat = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0,1,0), normal);
+    pin.quaternion.copy(quat);
+
+    // Posición radial con offset ajustable
+    const offset = r * FLAG_STYLE.surfaceOffset;
+    pin.position.copy(normal).multiplyScalar(r + offset);
+
+    // Guardar y colgar de la Luna para que acompañe cualquier giro
+    moon.add(pin);
+    markers[cfg.id] = pin;
+  }
+
+  // Anima la cámara para “orbitar” hacia la bandera seleccionada
+  function focusFlag(id){
+    const marker = markers[id];
+    if(!marker) return;
+
+    // Centro de la Luna es (0,0,0) tras el centrado
+    const center = new THREE.Vector3(0,0,0);
+    const dir = marker.getWorldPosition(new THREE.Vector3()).sub(center).normalize();
+
+    const distance = camera.position.distanceTo(center);
+    const targetPos = center.clone().add(dir.multiplyScalar(distance));
+
+    // Animación suave (easeInOut)
+    const from = camera.position.clone();
+    const start = performance.now();
+    const dur = 1200;
+
+    controls.enabled = false;
+
+    (function step(now){
+      const t = Math.min(1, (now - start)/dur);
+      const e = easeInOutQuad(t);
+
+      camera.position.lerpVectors(from, targetPos, e);
+      // siempre miramos al centro de la Luna
+      controls.target.set(0,0,0);
+      controls.update();
+
+      if(t < 1){
+        requestAnimationFrame(step);
+      }else{
+        // pequeño “pulse” para destacar la bandera
+        pulse(marker);
+        controls.enabled = true;
+      }
+    })(start);
+  }
+
+  function pulse(obj){
+    const base = obj.scale.clone();
+    const peak = base.clone().multiplyScalar(1.3);
+    const start = performance.now();
+    const upDur = 120, downDur = 180;
+
+    (function up(now){
+      const t = Math.min(1, (now - start)/upDur);
+      obj.scale.lerpVectors(base, peak, t);
+      if(t < 1) requestAnimationFrame(up); else {
+        const startDown = performance.now();
+        (function down(now2){
+          const u = Math.min(1, (now2 - startDown)/downDur);
+          obj.scale.lerpVectors(peak, base, u);
+          if(u < 1) requestAnimationFrame(down);
+        })(startDown);
+      }
+    })(start);
+  }
+
+  function easeInOutQuad(t){ return t<0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2; }
+
+  function onResize(){
+    const w = window.innerWidth, h = window.innerHeight;
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+    renderer.setSize(w,h);
+  }
+
+  function animate(){
+    requestAnimationFrame(animate);
+    controls.update();
+    renderer.render(scene, camera);
+  }
+  </script>
+</body>
+</html>
