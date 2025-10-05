@@ -59,6 +59,7 @@ def editor():
     return render_template('editor.html')
 
 
+
 @app.route('/api/calculate', methods=['POST'])
 def calculate():
     data = request.json
@@ -72,8 +73,12 @@ def view():
     return render_template('3dview.html')
 
 
-@app.route('/moon')
+@app.route('/moon', methods=['GET', 'POST'])
 def moon():
+    if request.method == 'POST':
+        session['location'] = request.form['location']
+        return redirect(url_for('editor'))
+
     return render_template('moon.html')
 
 if __name__ == '__main__':

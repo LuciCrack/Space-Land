@@ -25,19 +25,19 @@
 <body>
   <div class="app">
     <aside>
-      <div class="title">Banderitas</div>
+      <div class="title">Locations</div>
       <div class="flags">
         <!-- Puedes cambiar emoji y texto a gusto -->
-        <button class="flag-btn" data-id="A"><span class="flag-emoji">🚩</span> Bandera A</button>
-        <button class="flag-btn" data-id="B"><span class="flag-emoji">🚩</span> Bandera B</button>
-        <button class="flag-btn" data-id="C"><span class="flag-emoji">🚩</span> Bandera C</button>
-        <button class="flag-btn" data-id="D"><span class="flag-emoji">🚩</span> Bandera D</button>
+        <button class="flag-btn" data-id="A"><span class="flag-emoji">🚩</span> Location A</button>
+        <button class="flag-btn" data-id="B"><span class="flag-emoji">🚩</span> Location B</button>
+        <button class="flag-btn" data-id="C"><span class="flag-emoji">🚩</span> Location C</button>
+        <button class="flag-btn" data-id="D"><span class="flag-emoji">🚩</span> Location D</button>
       </div>
     </aside>
     <div id="viewport"></div>
   </div>
 
-  <!-- three.js r128 + extras -->
+  <!-- three.js r128 + extras, for 3d model viewing-->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/loaders/GLTFLoader.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128/examples/js/controls/OrbitControls.js"></script>
@@ -47,15 +47,16 @@
   let moon, moonRadius = 1, center = new THREE.Vector3(0,0,0);
   const markers = {}; // id -> THREE.Object3D
 
-  // === Configura aquí tus 4 banderitas:
-  // lat (°N), lon (°E). Ajusta colores si quieres.
-  const FLAGS = [
-    { id:"A", name:"Bandera A", lat:  10, lon:   0, color: 0xff4d4d },
-    { id:"B", name:"Bandera B", lat: -15, lon:  60, color: 0x4dd2ff },
-    { id:"C", name:"Bandera C", lat:  25, lon:-120, color: 0xffd24d },
-    { id:"D", name:"Bandera D", lat: -35, lon: -40, color: 0x9d7bff },
+
+  const FLAGS = [ // === Configura aquí tus locations:
+    // ID,    nombre,           latitud,  longitud,   color (hex)
+    { id:"A", name:"Location A", lat:  10, lon:   0, color: 0xff4d4d },
+    { id:"B", name:"Location B", lat: -15, lon:  60, color: 0x4dd2ff },
+    { id:"C", name:"Location C", lat:  25, lon:-120, color: 0xffd24d },
+    { id:"D", name:"Location D", lat: -35, lon: -40, color: 0x9d7bff },
   ];
 
+  // run
   init();
   loadMoon();
 
