@@ -329,8 +329,7 @@ function updateRocketDialog() {
   const imgDiv = document.getElementById('rocket-image-dialog');
   if (!imgDiv) return; // si no está abierto, nada que hacer
 
-  let idx = nodes.length;
-  if (idx > 7) idx = 6;
+  let idx = Math.min(nodes.length, 6);
   if (idx < 0) idx = 0;
 
   const img = imgDiv.querySelector('img');
@@ -917,6 +916,38 @@ function toggleWarningTable() {
 
 // Add click event to warning icon (toggle)
 document.querySelector('img[alt="Warning"]').addEventListener('click', toggleWarningTable);
+
+// Add overlay when Electricity icon is clicked
+document.querySelector('img[alt="Electricity"]').addEventListener('click', function() {
+  // Find all bridges
+  const svg = document.getElementById('stage');
+  const bridges = svg.querySelectorAll('image');
+  bridges.forEach(img => {
+    const href = img.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+    if (href && href.includes('Bridge_H.png')) {
+      // Add electrical overlay above the horizontal bridge
+      const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      overlay.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '/static/modules/Electrical_H.png');
+      overlay.setAttribute('x', img.getAttribute('x'));
+      overlay.setAttribute('y', img.getAttribute('y'));
+      overlay.setAttribute('width', img.getAttribute('width'));
+      overlay.setAttribute('height', img.getAttribute('height'));
+      overlay.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      img.parentNode.appendChild(overlay);
+    }
+    if (href && href.includes('Bridge_V.png')) {
+      // Add electrical overlay above the vertical bridge
+      const overlayV = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      overlayV.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '/static/modules/Electrical_V.png');
+      overlayV.setAttribute('x', img.getAttribute('x'));
+      overlayV.setAttribute('y', img.getAttribute('y'));
+      overlayV.setAttribute('width', img.getAttribute('width'));
+      overlayV.setAttribute('height', img.getAttribute('height'));
+      overlayV.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      img.parentNode.appendChild(overlayV);
+    }
+  });
+});
 
 // =====================
 // INIT
