@@ -305,12 +305,22 @@ function drawGrid(){
   stage.setAttribute('viewBox', `0 0 ${W} ${H}`);
   stage.innerHTML = '';
 
-  // background
+  // background color (behind image)
   const bg = document.createElementNS('http://www.w3.org/2000/svg','rect');
   bg.setAttribute('x', 0); bg.setAttribute('y', 0);
   bg.setAttribute('width', W); bg.setAttribute('height', H);
   bg.setAttribute('fill', '#0b1220');
   stage.appendChild(bg);
+
+  // background image (on top of color)
+  const bgImg = document.createElementNS('http://www.w3.org/2000/svg','image');
+  bgImg.setAttributeNS('http://www.w3.org/1999/xlink','href', "{{ url_for('static', filename='img/surface.png') }}");
+  bgImg.setAttribute('x', PAD);
+  bgImg.setAttribute('y', PAD);
+  bgImg.setAttribute('width', COLS*CELL);
+  bgImg.setAttribute('height', ROWS*CELL);
+  bgImg.setAttribute('preserveAspectRatio','none');
+  stage.appendChild(bgImg);
 
   // panel
   const panel = document.createElementNS('http://www.w3.org/2000/svg','rect');
