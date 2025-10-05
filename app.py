@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+import viability
 
 app = Flask(__name__)
 app.secret_key = "super_secret_hackathon_key"  # Needed for session
@@ -65,9 +66,12 @@ def editor():
 @app.route('/api/calculate', methods=['POST'])
 def calculate():
     data = request.json
-    # Compute stats based on user input (e.g., modules layout)
-    # For now, just echo back
-    return jsonify({"status": "ok", "input": data})
+    modules = data.get("modules", [])
+    crew = int(data.get("crew", 1))
+    days = int(data.get("days", 1))
+
+    result = viability.calculate_viability(modules, crew, days)
+    return jsonify(result)
 
 
 @app.route('/view')

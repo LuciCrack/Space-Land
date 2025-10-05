@@ -55,14 +55,36 @@
   <div style="position:fixed; top:18px; left:18px; z-index:100;">
     <img src="{{ url_for('static', filename='img/logo.png') }}" alt="Logo" style="height:56px; width:auto;">
   </div>
-<div style="width:100%; display:flex; justify-content:center; align-items:center; gap:32px; margin:32px 0 0 0;">
-  <img src="{{ url_for('static', filename='icons/Warning.png') }}" alt="Warning" title="Warning" style="width:40px; height:40px;">
-  <img src="{{ url_for('static', filename='icons/Rocket.png') }}" alt="Rocket" title="Rocket" style="width:40px; height:40px;">
-  <img src="{{ url_for('static', filename='icons/VR.png') }}" alt="VR" title="VR" style="width:40px; height:40px;">
-  <img id="btn-3dview" src="{{ url_for('static', filename='icons/3d.png') }}" alt="3D" title="3D View" style="width:40px; height:40px; cursor:pointer;">
-</div>
+  <div style="width:100%; display:flex; justify-content:center; align-items:center; gap:32px; margin:32px 0 0 0;">
+    <img src="{{ url_for('static', filename='icons/Warning.png') }}" alt="Warning" title="Warning" style="width:40px; height:40px;">
+    <img src="{{ url_for('static', filename='icons/Rocket.png') }}" alt="Rocket" title="Rocket" style="width:40px; height:40px;">
+    <img src="{{ url_for('static', filename='icons/VR.png') }}" alt="VR" title="VR" style="width:40px; height:40px;">
+    <img id="btn-3dview" src="{{ url_for('static', filename='icons/3d.png') }}" alt="3D" title="3D View" style="width:40px; height:40px; cursor:pointer;">
+  </div>
+
 <div class="app">
   <aside>
+    <!-- CREW AND DAYS INPUT -->
+    <div class="title">
+      <h1 style="margin:0;font-size:18px;">Information</h1>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <span id="info"></span>
+      </div>
+    </div>
+
+    <div style="margin:22px 0 10px;">
+      <label style="display:block; font-size:14px; margin-bottom:6px;">
+        Crew members:
+        <input type="number" id="crew-input" value="4" min="1" max="20" style="width:60px; margin-left:8px; border-radius:6px; border:1px solid #222; padding:2px 6px; font-size:16px;">
+      </label>
+      <label style="display:block; font-size:14px; margin-top:8px;">
+        Mission days:
+        <input type="number" id="days-input" value="30" min="1" max="1000" style="width:80px; margin-left:8px; border-radius:6px; border:1px solid #222; padding:2px 6px; font-size:16px;">
+      </label>
+    </div>
+
+
+    <!-- MODULES DRAG N DROP -->
     <div class="title">
       <h1 style="margin:0;font-size:18px;">Modules</h1>
       <span class="pill">drag</span>
@@ -318,6 +340,7 @@
       </label>
       <button class="btn" id="save">Save</button>
       <button class="btn" id="load">Load</button>
+      <button class="btn" id="calculate">Calculate Viability</button>
     </div>
     <div class="hint">Drop onto free cells. Click to select; use arrow keys to move; Delete/Backspace to remove. Export/Import JSON.</div>
   </aside>
@@ -383,6 +406,19 @@ const badge = document.getElementById('badge');
 
 const W = COLS * CELL + PAD * 2;
 const H = ROWS * CELL + PAD * 2;
+
+// CREW and DAYS 
+// Global mission parameters
+let crewNum = 4;
+let missionDays = 30;
+
+// On DOMContentLoaded or after HTML insertion
+document.getElementById('crew-input').addEventListener('input', function(e) {
+  crewNum = parseInt(e.target.value, 10) || 1;
+});
+document.getElementById('days-input').addEventListener('input', function(e) {
+  missionDays = parseInt(e.target.value, 10) || 1;
+});
 
 /**
  * @typedef {Object} Node
@@ -833,6 +869,31 @@ document.getElementById('clear').addEventListener('click', ()=>{
   }
 });
 
+// =======================
+//      VIABILITY 
+// =======================
+
+document.getElementById('calculate').addEventListener('click', ()=> {
+  // Minimal payload:
+  fetch('/api/calculate', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      modules: nodes.map(n => ({type: n.type})), // instead of just n.type
+      crew: crewNum,
+      days: missionDays
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    // Show Viability Index
+    document.getElementById('info').innerHTML = `Viability: ${data.VI.toFixed(2)}`;
+  });
+})
+
+// =======================
+//      TOP BUTTONS
+// =======================
 // Play VR video when clicking the VR icon
 document.querySelectorAll('img[alt="VR"]').forEach(img => {
   img.addEventListener('click', function() {
@@ -849,7 +910,7 @@ document.getElementById('close-vr-video').addEventListener('click', function() {
   document.getElementById('vr-video').pause();
 });
 
-// Optional: close modal when clicking outside video
+// close modal when clicking outside video
 document.getElementById('vr-video-modal').addEventListener('click', function(e) {
   if(e.target === this){
     this.style.display = 'none';
@@ -924,7 +985,7 @@ function toggleRocketImage() {
   let idx = nodes.length;
   if (idx > 7) idx = 6;
   if (idx < 0) idx = 0;
-  const rocketImg = `/static/icons/rocket_${idx}.png`; // Build path directly
+  const rocketImg = `/static/icons/Rocket_${idx}.png`; // Build path directly
 
   // Create image dialog
   imgDiv = document.createElement('div');
@@ -956,6 +1017,7 @@ document.querySelector('img[alt="Rocket"]').addEventListener('click', function(e
   toggleRocketImage();
 });
 
+// ROCKET TABLE
 // Add dialog for warning icon (toggle on click)
 function toggleWarningTable() {
   let tbl = document.getElementById('rocket-table-dialog');
