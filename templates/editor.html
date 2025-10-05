@@ -280,6 +280,14 @@ function setSelected(id){
   renderNodes();
 }
 
+function updateWeightDialog() {
+  const dlg = document.getElementById('weight-dialog');
+  if (dlg) {
+    const weight = 50 * nodes.length;
+    dlg.textContent = `${weight} KG`;
+  }
+}
+
 function addNode(type,label,src,col,row){
   if(!inBounds(col,row) || occupied(col,row)) return null;
   const n = { id:uid(), type,label,src, x:col, y:row };
@@ -287,6 +295,7 @@ function addNode(type,label,src,col,row){
   setSelected(n.id);
   renderNodes();
   updateBadge();
+  updateWeightDialog(); // <-- update weight dialog
   return n;
 }
 
@@ -296,6 +305,7 @@ function removeSelected(){
   selectedId = null;
   renderNodes();
   updateBadge();
+  updateWeightDialog(); // <-- update weight dialog
 }
 
 // =====================
@@ -314,7 +324,7 @@ function drawGrid(){
 
   // background image (on top of color)
   const bgImg = document.createElementNS('http://www.w3.org/2000/svg','image');
-  bgImg.setAttributeNS('http://www.w3.org/1999/xlink','href', "{{ url_for('static', filename='img/surface.png') }}");
+  bgImg.setAttributeNS('http://www.w3.org/1999/xlink','href', "{{ url_for('static', filename='img/surface.jpeg') }}");
   bgImg.setAttribute('x', PAD);
   bgImg.setAttribute('y', PAD);
   bgImg.setAttribute('width', COLS*CELL);
@@ -620,6 +630,7 @@ document.getElementById('import').addEventListener('change', async (e)=>{
       selectedId = null;
       renderNodes();
       updateBadge();
+      updateWeightDialog();
     }
   }catch(err){ alert('Invalid JSON'); }
   e.target.value = '';
@@ -639,12 +650,14 @@ document.getElementById('load').addEventListener('click', ()=>{
       selectedId = null;
       renderNodes();
       updateBadge();
+      updateWeightDialog();
     }
   }catch{ alert('Corrupted save.'); }
 });
 document.getElementById('clear').addEventListener('click', ()=>{
   if(confirm('Remove all modules from the board?')){
     nodes = []; selectedId=null; renderNodes(); updateBadge();
+    updateWeightDialog(); // <-- update weight dialog
   }
 });
 
@@ -676,6 +689,116 @@ document.getElementById('vr-video-modal').addEventListener('click', function(e) 
 document.getElementById('btn-3dview').addEventListener('click', function() {
   window.location.href = "/view";
 });
+
+// Add dialog for weight icon (toggle on click)
+function toggleWeightDialog() {
+  let dlg = document.getElementById('weight-dialog');
+  const weightIcon = document.querySelector('img[alt="Weight"]');
+  if (!weightIcon) return;
+
+  if (dlg) {
+    dlg.remove();
+    return;
+  }
+
+  // Get icon position
+  const rect = weightIcon.getBoundingClientRect();
+
+  // Calculate weight: 50 * number of modules
+  const weight = 50 * nodes.length;
+
+  // Create dialog
+  dlg = document.createElement('div');
+  dlg.id = 'weight-dialog';
+  dlg.textContent = `${weight} KG`;
+  dlg.style.position = 'fixed';
+  dlg.style.left = (rect.left - 110) + 'px'; // 90 + 20 px to the left
+  dlg.style.top = (rect.top + rect.height/2 - 20) + 'px';
+  dlg.style.background = '#111827';
+  dlg.style.color = '#e5e7eb';
+  dlg.style.border = '1px solid #1f2937';
+  dlg.style.borderRadius = '8px';
+  dlg.style.padding = '12px 24px';
+  dlg.style.fontSize = '18px';
+  dlg.style.zIndex = '9999';
+  dlg.style.boxShadow = '0 2px 8px #0008';
+
+  document.body.appendChild(dlg);
+}
+
+// Add click event to weight icon (toggle)
+document.querySelector('img[alt="Weight"]').addEventListener('click', toggleWeightDialog);
+
+// Add dialog for rocket icon (toggle on click)
+function toggleRocketTable() {
+  let tbl = document.getElementById('rocket-table-dialog');
+  const rocketIcon = document.querySelector('img[alt="Rocket"]');
+  if (!rocketIcon) return;
+
+  if (tbl) {
+    tbl.remove();
+    rocketIcon.style.filter = ""; // Restore brightness
+    return;
+  }
+
+  // Get icon position
+  const rect = rocketIcon.getBoundingClientRect();
+
+  // Create table dialog
+  tbl = document.createElement('div');
+  tbl.id = 'rocket-table-dialog';
+  tbl.style.position = 'fixed';
+  tbl.style.left = (rect.left) + 'px';
+  tbl.style.top = (rect.bottom + 8) + 'px';
+  tbl.style.background = 'rgba(17,24,39,0.97)';
+  tbl.style.color = '#e5e7eb';
+  tbl.style.border = '1px solid #1f2937';
+  tbl.style.borderRadius = '12px';
+  tbl.style.padding = '18px 24px';
+  tbl.style.zIndex = '9999';
+  tbl.style.boxShadow = '0 2px 12px #000a';
+  tbl.style.fontFamily = 'inherit';
+
+  tbl.innerHTML = `
+    <table style="border-collapse:collapse; width:100%; font-size:16px;">
+      <tr style="background:#111827;">
+        <th style="padding:8px 12px; border:1px solid #222;">HABITAT</th>
+        <th style="padding:8px 12px; border:1px solid #222;">MATERIAL</th>
+        <th style="padding:8px 12px; border:1px solid #222;">WIND RESISTANCE</th>
+        <th style="padding:8px 12px; border:1px solid #222;">RADIATION RESISTANCE</th>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px; border:1px solid #222;">KITCHEN</td>
+        <td style="padding:8px 12px; border:1px solid #222;">STEEL</td>
+        <td style="padding:8px 12px; border:1px solid #222; color:#eab308;">110KM/H</td>
+        <td style="padding:8px 12px; border:1px solid #222;">120w/m<sup>2</sup></td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px; border:1px solid #222;">ROOM</td>
+        <td style="padding:8px 12px; border:1px solid #222;">INFLABLE</td>
+        <td style="padding:8px 12px; border:1px solid #222; color:#ef4444;">70KM/H</td>
+        <td style="padding:8px 12px; border:1px solid #222; color:#fbbf24;">70W/m<sup>2</sup></td>
+      </tr>
+      <tr>
+        <td style="padding:8px 12px; border:1px solid #222;">GREENHOUSE</td>
+        <td style="padding:8px 12px; border:1px solid #222;">INFLABLE</td>
+        <td style="padding:8px 12px; border:1px solid #222; color:#22c55e;">150KM/H</td>
+        <td style="padding:8px 12px; border:1px solid #222; color:#fbbf24;">60W/m<sup>2</sup></td>
+      </tr>
+      <tr style="background:#18181b;">
+        <td style="padding:8px 12px; border:1px solid #222;">TOTAL</td>
+        <td style="padding:8px 12px; border:1px solid #222;"></td>
+        <td style="padding:8px 12px; border:1px solid #222;"></td>
+        <td style="padding:8px 12px; border:1px solid #222; color:#fbbf24;">700KG</td>
+      </tr>
+    </table>
+  `;
+
+  document.body.appendChild(tbl);
+  rocketIcon.style.filter = "brightness(0.5)"; // Decrease brightness
+}
+
+document.querySelector('img[alt="Rocket"]').addEventListener('click', toggleRocketTable);
 
 // =====================
 // INIT
