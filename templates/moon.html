@@ -20,6 +20,27 @@
     .flag-btn:hover{ background:#151824; }
     #viewport{ flex:1; position:relative; }
     canvas{ display:block; width:100%; height:100%; }
+
+  .flag-btn.selected {
+    background: #2e364f;
+    color: #ffd966;
+    border-color: #ffd966;
+  }
+
+  #submit-btn {
+    opacity: 0.5;
+    margin-top:20px;width:100%;padding:12px 0;border-radius:10px;background:#2e364f;color:#fff;font-size:1.1em;font-weight:600;cursor:pointer;border:none;opacity:0.7;
+  }
+
+  #submit-btn:enabled {
+    opacity: 1;
+    background: #ffd966;
+    color: #1b1d24;
+  }
+
+  #submit-btn:hover {
+    background: #fae7ac;
+  }
   </style>
 </head>
 <body>
@@ -27,12 +48,16 @@
     <aside>
       <div class="title">Locations</div>
       <div class="flags">
-        <!-- Puedes cambiar emoji y texto a gusto -->
+        <!-- se puede cambiar emoji y texto a gusto -->
         <button class="flag-btn" data-id="A"><span class="flag-emoji">🚩</span> Location A</button>
         <button class="flag-btn" data-id="B"><span class="flag-emoji">🚩</span> Location B</button>
         <button class="flag-btn" data-id="C"><span class="flag-emoji">🚩</span> Location C</button>
         <button class="flag-btn" data-id="D"><span class="flag-emoji">🚩</span> Location D</button>
       </div>
+      <form id="flag-form" action="/moon" method="POST">
+        <input type="hidden" name="location" id="flag-input" value="">
+        <button name="location" type="submit" id="submit-btn" disabled >Select and go to Editor 🚀</button>
+      </form>
     </aside>
     <div id="viewport"></div>
   </div>
@@ -48,7 +73,7 @@
   const markers = {}; // id -> THREE.Object3D
 
 
-  const FLAGS = [ // === Configura aquí tus locations:
+  const FLAGS = [ // aquí se configuran las locations:
     // ID,    nombre,           latitud,  longitud,   color (hex)
     { id:"A", name:"Location A", lat:  10, lon:   0, color: 0xff4d4d },
     { id:"B", name:"Location B", lat: -15, lon:  60, color: 0x4dd2ff },
@@ -82,8 +107,25 @@
 
     // Clicks del panel
     document.querySelectorAll(".flag-btn").forEach(btn=>{
-      btn.addEventListener("click", ()=>{
-        focusFlag(btn.dataset.id);
+      const flagBtns = Array.from(document.querySelectorAll('.flag-btn'));
+      const flagInput = document.getElementById('flag-input');
+      const submitBtn = document.getElementById('submit-btn');
+      let selectedId = null;
+
+      // On flag click
+      btn.addEventListener('click', (e) => {
+        // Prevent double focusFlag on click
+        e.preventDefault();
+
+        // Remove selection from others
+        flagBtns.forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+        selectedId = btn.dataset.id;
+        flagInput.value = selectedId;
+        submitBtn.disabled = false;
+
+        // Move camera as before
+        focusFlag(selectedId);
       });
     });
 
