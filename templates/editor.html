@@ -949,6 +949,38 @@ document.querySelector('img[alt="Electricity"]').addEventListener('click', funct
   });
 });
 
+// Add overlay when Water icon is clicked
+document.querySelector('img[alt="Water"]').addEventListener('click', function() {
+  // Find all bridges
+  const svg = document.getElementById('stage');
+  const bridges = svg.querySelectorAll('image');
+  bridges.forEach(img => {
+    const href = img.getAttributeNS('http://www.w3.org/1999/xlink', 'href');
+    if (href && href.includes('Bridge_H.png')) {
+      // Add water overlay above the horizontal bridge
+      const overlay = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      overlay.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '/static/modules/Water_H.png');
+      overlay.setAttribute('x', img.getAttribute('x'));
+      overlay.setAttribute('y', img.getAttribute('y'));
+      overlay.setAttribute('width', img.getAttribute('width'));
+      overlay.setAttribute('height', img.getAttribute('height'));
+      overlay.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      img.parentNode.appendChild(overlay);
+    }
+    if (href && href.includes('Bridge_V.png')) {
+      // Add water overlay above the vertical bridge
+      const overlayV = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+      overlayV.setAttributeNS('http://www.w3.org/1999/xlink', 'href', '/static/modules/Water_V.png');
+      overlayV.setAttribute('x', img.getAttribute('x'));
+      overlayV.setAttribute('y', img.getAttribute('y'));
+      overlayV.setAttribute('width', img.getAttribute('width'));
+      overlayV.setAttribute('height', img.getAttribute('height'));
+      overlayV.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      img.parentNode.appendChild(overlayV);
+    }
+  });
+});
+
 // =====================
 // INIT
 // =====================

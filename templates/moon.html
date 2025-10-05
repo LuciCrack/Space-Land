@@ -49,10 +49,10 @@
       <div class="title">Locations</div>
       <div class="flags">
         <!-- se puede cambiar emoji y texto a gusto -->
-        <button class="flag-btn" data-id="A"><span class="flag-emoji">🚩</span> Location A</button>
-        <button class="flag-btn" data-id="B"><span class="flag-emoji">🚩</span> Location B</button>
-        <button class="flag-btn" data-id="C"><span class="flag-emoji">🚩</span> Location C</button>
-        <button class="flag-btn" data-id="D"><span class="flag-emoji">🚩</span> Location D</button>
+        <button class="flag-btn" data-id="A"><span class="flag-emoji">🚩</span> Mare Tranquillitatis (Apolo 11 site)</button>
+        <button class="flag-btn" data-id="B"><span class="flag-emoji">🚩</span> Mare Imbrium (Apolo 15 site)</button>
+        <button class="flag-btn" data-id="C"><span class="flag-emoji">🚩</span> Oceanus Procellarum (Apolo 12 site)</button>
+        <button class="flag-btn" data-id="D"><span class="flag-emoji">🚩</span> Location D (Apolo 17 site)</button>
       </div>
       <form id="flag-form" action="/moon" method="POST">
         <input type="hidden" name="location" id="flag-input" value="">
@@ -75,10 +75,10 @@
 
   const FLAGS = [ // aquí se configuran las locations:
     // ID,    nombre,           latitud,  longitud,   color (hex)
-    { id:"A", name:"Location A", lat:  10, lon:   0, color: 0xff4d4d },
-    { id:"B", name:"Location B", lat: -15, lon:  60, color: 0x4dd2ff },
-    { id:"C", name:"Location C", lat:  25, lon:-120, color: 0xffd24d },
-    { id:"D", name:"Location D", lat: -35, lon: -40, color: 0x9d7bff },
+    { id:"A", name:"Mare Tranquillitatis", lat:  0.674, lon:   23.473, color: 0xff4d4d },
+    { id:"B", name:"Location B", lat: 26.132, lon:  3.633, color: 0x4dd2ff },
+    { id:"C", name:"Location C", lat:  -3.012, lon:-23.421, color: 0xffd24d },
+    { id:"D", name:"Location D", lat: 20.190, lon: 30.722, color: 0x9d7bff },
   ];
 
   // run
@@ -126,6 +126,56 @@
 
         // Move camera as before
         focusFlag(selectedId);
+      });
+    });
+
+    document.querySelectorAll('.flag-btn').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        // ...existing selection code...
+
+        // Remove previous dialog if exists
+        let oldDlg = document.getElementById('flag-info-dialog');
+        if (oldDlg) oldDlg.remove();
+
+        // Get config for selected flag
+        const id = btn.dataset.id;
+        const cfg = FLAGS.find(f => f.id === id);
+
+        // Example temperature data (customize as needed)
+        const tempData = {
+          A: { max: "+120°C", min: "-130°C" },
+          B: { max: "+110°C", min: "-140°C" },
+          C: { max: "+100°C", min: "-120°C" },
+          D: { max: "+90°C",  min: "-150°C" }
+        };
+        const temp = tempData[id] || { max: "N/A", min: "N/A" };
+
+        // Get button position
+        const rect = btn.getBoundingClientRect();
+
+        // Create dialog
+        const dlg = document.createElement('div');
+        dlg.id = 'flag-info-dialog';
+        dlg.style.position = 'fixed';
+        dlg.style.left = (rect.right + 16) + 'px';
+        dlg.style.top = (rect.top) + 'px';
+        dlg.style.background = '#18181b';
+        dlg.style.color = '#ffd966';
+        dlg.style.border = '1px solid #ffd966';
+        dlg.style.borderRadius = '10px';
+        dlg.style.padding = '16px 24px';
+        dlg.style.fontSize = '16px';
+        dlg.style.zIndex = '9999';
+        dlg.style.boxShadow = '0 2px 12px #000a';
+
+        dlg.innerHTML = `
+          <div><b>Latitude:</b> ${cfg.lat}°</div>
+          <div><b>Longitude:</b> ${cfg.lon}°</div>
+          <div><b>Max Temp:</b> ${temp.max}</div>
+          <div><b>Min Temp:</b> ${temp.min}</div>
+        `;
+
+        document.body.appendChild(dlg);
       });
     });
 
